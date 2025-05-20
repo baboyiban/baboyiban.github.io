@@ -1,5 +1,5 @@
 {
-  "name": "astro-blog",
+  "name": "baboyiban.github.io",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -12,6 +12,6 @@
   "dependencies": {
     "@astrojs/starlight": "^0.34.3",
     "astro": "^5.7.13",
-    "sharp": "^0.32.5"
+    "sharp": "^0.32.6"
   }
 }
