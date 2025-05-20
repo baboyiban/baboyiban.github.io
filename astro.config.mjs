@@ -6,8 +6,8 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: '다루한의 문서',
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/baboyiban/baboyiban.github.io' }],
 			sidebar: [
 				// {
 				// 	label: 'Guides',
@@ -21,8 +21,8 @@ export default defineConfig({
 				// 	autogenerate: { directory: 'reference' },
 				// },
 				{
-					label: 'Book',
-					autogenerate: { directory: 'Book' },
+					label: '문서',
+					autogenerate: { directory: 'docs' },
 				}
 			],
 		}),
