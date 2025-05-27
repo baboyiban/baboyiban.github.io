@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Example Site on My New Hugo Site</title><link>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/</link><description>Recent content in Example Site on My New Hugo Site</description><generator>Hugo</generator><language>en-us</language><atom:link href="http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/index.xml" rel="self" type="application/rss+xml"/><item><title>저장 공간 확인</title><link>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>df -h
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>한글 깨짐 문제</title><link>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># language-pack-ko 패키지 설치&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>apt-get install language-pack-ko
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 로케일 설치&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>locale-gen ko_KR.UTF-8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 패키지 재설정&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>dpkg-reconfigure locales
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ko_KR.UTF-8 UTF-8 찾아 번호 입력&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># (290 또는 299)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ko_KR.UTF-8 이 써져 있는 번호 입력&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 환경변수 &lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>export LANGUAGE&lt;span style="color:#f92672">=&lt;/span>ko_KR.UTF-8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>export LANG&lt;span style="color:#f92672">=&lt;/span>ko_KR.UTF-8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 적용&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>locale
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># .bashrc 에 추가해 자동 실행 적용&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>nano ~/.bashrc
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>export LANGUAGE&lt;span style="color:#f92672">=&lt;/span>ko_KR.UTF-8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>export LANG&lt;span style="color:#f92672">=&lt;/span>ko_KR.UTF-8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>source ~/.bashrc
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item></channel></rss>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>My New Hugo Site</title><link>http://localhost:1313/docs/book/web/nextjs/</link><description>Recent content on My New Hugo Site</description><generator>Hugo</generator><language>en-us</language><atom:link href="http://localhost:1313/docs/book/web/nextjs/index.xml" rel="self" type="application/rss+xml"/><item><title>구조</title><link>http://localhost:1313/docs/book/web/nextjs/%EA%B5%AC%EC%A1%B0/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EA%B5%AC%EC%A1%B0/</guid><description>&lt;p>NextJS 웹앱의 권장 폴더 구조는 다음과 같습니다:&lt;/p>
+&lt;pre tabindex="0">&lt;code>my-nextjs-app/
+├── app/
+│ ├── api/
+│ ├── (routes)/
+│ ├── layout.tsx
+│ └── page.tsx
+├── components/
+├── lib/
+├── public/
+├── styles/
+├── types/
+├── utils/
+├── .env.local
+├── .gitignore
+├── next.config.js
+├── package.json
+└── tsconfig.json
+&lt;/code>&lt;/pre>&lt;p>주요 폴더 및 파일의 설명:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>app/&lt;/code>: 라우팅 및 페이지 컴포넌트&lt;/li>
+&lt;li>&lt;code>api/&lt;/code>: API 라우트&lt;/li>
+&lt;li>&lt;code>(routes)/&lt;/code>: 그룹화된 라우트&lt;/li>
+&lt;li>&lt;code>components/&lt;/code>: 재사용 가능한 UI 컴포넌트&lt;/li>
+&lt;li>&lt;code>lib/&lt;/code>: 외부 라이브러리 및 API&lt;/li>
+&lt;li>&lt;code>public/&lt;/code>: 정적 파일&lt;/li>
+&lt;li>&lt;code>styles/&lt;/code>: 전역 스타일 및 CSS 모듈&lt;/li>
+&lt;li>&lt;code>types/&lt;/code>: TypeScript 타입 정의&lt;/li>
+&lt;li>&lt;code>utils/&lt;/code>: 유틸리티 함수&lt;/li>
+&lt;/ul>
+&lt;p>이 구조는 NextJS 13 이상의 App Router를 기반으로 합니다. 프로젝트의 규모와 요구사항에 따라 조정할 수 있습니다.&lt;/p></description></item><item><title>배포 (bun)</title><link>http://localhost:1313/docs/book/web/nextjs/%EB%B0%B0%ED%8F%AC-bun/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EB%B0%B0%ED%8F%AC-bun/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>bun run build
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>bun run start
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>bun run start -p &lt;span style="color:#ae81ff">8080&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h1 id="pm2-배포">
+ PM2 배포
+ &lt;a class="anchor" href="#pm2-%eb%b0%b0%ed%8f%ac">#&lt;/a>
+&lt;/h1>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>bun run build
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>export NODE_ENV&lt;span style="color:#f92672">=&lt;/span>production &lt;span style="color:#75715e"># mac, linux&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set NODE_ENV&lt;span style="color:#f92672">=&lt;/span>production &lt;span style="color:#75715e"># window&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>bun i -g pm2
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>sudo apt update
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo apt install npm
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo npm cache clean --force
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo npm install -g n
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo n stable
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo npm install -g npm
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 start bun --name nextjs-app -- run start -- -p &lt;span style="color:#ae81ff">8080&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h1 id="pm2-기능">
+ PM2 기능
+ &lt;a class="anchor" href="#pm2-%ea%b8%b0%eb%8a%a5">#&lt;/a>
+&lt;/h1>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 list nextjs-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 stop nextjs-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 start nextjs-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 restart nextjs-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 delete nextjs-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>참고사이트
+&lt;a href="https://medium.com/@mudasirhaji/deploying-a-next-js-app-manually-on-aws-ec2-a-step-by-step-guide-58b266ff1c52">https://medium.com/@mudasirhaji/deploying-a-next-js-app-manually-on-aws-ec2-a-step-by-step-guide-58b266ff1c52&lt;/a>&lt;/p></description></item><item><title>배포 (npm)</title><link>http://localhost:1313/docs/book/web/nextjs/%EB%B0%B0%ED%8F%AC-npm/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EB%B0%B0%ED%8F%AC-npm/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>sudo apt update
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo apt install npm
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo npm cache clean --force
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo npm install -g n
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo n stable
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo npm install -g npm
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm run build
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm install -g pm2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pm2 start npm --name nextjs-app -- run start -- -p &lt;span style="color:#ae81ff">8080&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>pm2 restart nextjs-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>설치</title><link>http://localhost:1313/docs/book/web/nextjs/%EC%84%A4%EC%B9%98/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EC%84%A4%EC%B9%98/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>sudo npm install next react react-dom
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>시작</title><link>http://localhost:1313/docs/book/web/nextjs/%EC%8B%9C%EC%9E%91/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EC%8B%9C%EC%9E%91/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>npx create-next-app@latest
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 오류가 날때&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo chown -R 501:20 &lt;span style="color:#e6db74">&amp;#34;/Users/choidaruhan/.npm&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 또는&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm cache clean --force
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 추가 설치&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm install next react react-dom
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm run dev &lt;span style="color:#75715e"># 개발 모드&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm run build
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm run start
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item></channel></rss>

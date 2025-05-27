@@ -1,0 +1,1648 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>My New Hugo Site</title><link>http://localhost:1313/docs/book/</link><description>Recent content on My New Hugo Site</description><generator>Hugo</generator><language>en-us</language><atom:link href="http://localhost:1313/docs/book/index.xml" rel="self" type="application/rss+xml"/><item><title/><link>http://localhost:1313/docs/book/mqtt/%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/mqtt/%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/</guid><description>&lt;p>좋은 질문이에요!&lt;br>
+&lt;strong>라즈베리파이(Raspberry Pi)와 통신하는 API 서버를 만들 때는&lt;/strong>, 일반적인 웹 애플리케이션보다 &lt;strong>안정성, 보안, 네트워크 환경, 데이터 포맷, 프로토콜 등&lt;/strong>을 더 신경 써야 합니다.&lt;/p>
+&lt;hr>
+&lt;h2 id="-기본-개념-라즈베리파이--api-서버-통신-구조">
+ 🧱 기본 개념: 라즈베리파이 ↔ API 서버 통신 구조
+ &lt;a class="anchor" href="#-%ea%b8%b0%eb%b3%b8-%ea%b0%9c%eb%85%90-%eb%9d%bc%ec%a6%88%eb%b2%a0%eb%a6%ac%ed%8c%8c%ec%9d%b4--api-%ec%84%9c%eb%b2%84-%ed%86%b5%ec%8b%a0-%ea%b5%ac%ec%a1%b0">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>라즈베리파이 (센서 + MQTT 또는 HTTP 클라이언트)
+ ↓
+네트워크 (Wi-Fi / 이더넷 / LTE 등)
+ ↓
+API 서버 (Go + Gin + GORM 등)
+ ↓
+MySQL / PostgreSQL 등 DB 저장
+ ↓
+웹/앱에서 조회 가능
+&lt;/code>&lt;/pre>&lt;hr>
+&lt;h2 id="-1-api-서버-설계-방향">
+ ✅ 1. API 서버 설계 방향
+ &lt;a class="anchor" href="#-1-api-%ec%84%9c%eb%b2%84-%ec%84%a4%ea%b3%84-%eb%b0%a9%ed%96%a5">#&lt;/a>
+&lt;/h2>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>항목&lt;/th>
+ &lt;th>설명&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;strong>통신 방식&lt;/strong>&lt;/td>
+ &lt;td>HTTP REST API or MQTT or WebSocket 등&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>보안&lt;/strong>&lt;/td>
+ &lt;td>HTTPS, 인증(Token/JWT), IP 제한 등&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>데이터 포맷&lt;/strong>&lt;/td>
+ &lt;td>JSON 사용 권장&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>에러 처리&lt;/strong>&lt;/td>
+ &lt;td>정확한 HTTP 상태 코드 반환&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>로그 기록&lt;/strong>&lt;/td>
+ &lt;td>요청 로그, 오류 로그 남기기&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;hr>
+&lt;h2 id="-2-라즈베리파이와-주로-사용하는-통신-방식">
+ 📡 2. 라즈베리파이와 주로 사용하는 통신 방식
+ &lt;a class="anchor" href="#-2-%eb%9d%bc%ec%a6%88%eb%b2%a0%eb%a6%ac%ed%8c%8c%ec%9d%b4%ec%99%80-%ec%a3%bc%eb%a1%9c-%ec%82%ac%ec%9a%a9%ed%95%98%eb%8a%94-%ed%86%b5%ec%8b%a0-%eb%b0%a9%ec%8b%9d">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="1-http-rest-api">
+ 1) &lt;strong>HTTP REST API&lt;/strong>
+ &lt;a class="anchor" href="#1-http-rest-api">#&lt;/a>
+&lt;/h3>
+&lt;ul>
+&lt;li>가장 간단하고 직관적&lt;/li>
+&lt;li>라즈베리파이에서 &lt;code>curl&lt;/code>, Python &lt;code>requests&lt;/code> 등을 이용해 POST 요청 전송&lt;/li>
+&lt;/ul>
+&lt;h4 id="예시-python">
+ 예시 (Python):
+ &lt;a class="anchor" href="#%ec%98%88%ec%8b%9c-python">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> requests
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> json
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>url &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;http://api.yourserver.com/data&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>data &lt;span style="color:#f92672">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;device_id&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;raspi-01&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;temperature&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">25.5&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;humidity&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">60.3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>response &lt;span style="color:#f92672">=&lt;/span> requests&lt;span style="color:#f92672">.&lt;/span>post(url, json&lt;span style="color:#f92672">=&lt;/span>data)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>print(response&lt;span style="color:#f92672">.&lt;/span>status_code)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="gogin-api-예시">
+ Go(Gin) API 예시:
+ &lt;a class="anchor" href="#gogin-api-%ec%98%88%ec%8b%9c">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">r&lt;/span>.&lt;span style="color:#a6e22e">POST&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;/data&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">c&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">Context&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">payload&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">DeviceID&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span> &lt;span style="color:#e6db74">`json:&amp;#34;device_id&amp;#34;`&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">Temperature&lt;/span> &lt;span style="color:#66d9ef">float32&lt;/span> &lt;span style="color:#e6db74">`json:&amp;#34;temperature&amp;#34;`&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">Humidity&lt;/span> &lt;span style="color:#66d9ef">float32&lt;/span> &lt;span style="color:#e6db74">`json:&amp;#34;humidity&amp;#34;`&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">ShouldBindJSON&lt;/span>(&lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">payload&lt;/span>); &lt;span style="color:#a6e22e">err&lt;/span> &lt;span style="color:#f92672">!=&lt;/span> &lt;span style="color:#66d9ef">nil&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">JSON&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">StatusBadRequest&lt;/span>, &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">H&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;error&amp;#34;&lt;/span>: &lt;span style="color:#a6e22e">err&lt;/span>.&lt;span style="color:#a6e22e">Error&lt;/span>()})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">return&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">db&lt;/span>.&lt;span style="color:#a6e22e">Create&lt;/span>(&lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">models&lt;/span>.&lt;span style="color:#a6e22e">SensorData&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">DeviceID&lt;/span>: &lt;span style="color:#a6e22e">payload&lt;/span>.&lt;span style="color:#a6e22e">DeviceID&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">Temperature&lt;/span>: &lt;span style="color:#a6e22e">payload&lt;/span>.&lt;span style="color:#a6e22e">Temperature&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">Humidity&lt;/span>: &lt;span style="color:#a6e22e">payload&lt;/span>.&lt;span style="color:#a6e22e">Humidity&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">c&lt;/span>.&lt;span style="color:#a6e22e">JSON&lt;/span>(&lt;span style="color:#a6e22e">http&lt;/span>.&lt;span style="color:#a6e22e">StatusOK&lt;/span>, &lt;span style="color:#a6e22e">gin&lt;/span>.&lt;span style="color:#a6e22e">H&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;status&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;success&amp;#34;&lt;/span>})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>})
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
+&lt;h3 id="2-mqtt-통신-추천">
+ 2) &lt;strong>MQTT 통신 (추천)&lt;/strong>
+ &lt;a class="anchor" href="#2-mqtt-%ed%86%b5%ec%8b%a0-%ec%b6%94%ec%b2%9c">#&lt;/a>
+&lt;/h3>
+&lt;ul>
+&lt;li>실시간 센서 데이터 수신 시 유리&lt;/li>
+&lt;li>라즈베리파이가 발행(publish), 서버가 구독(subscribe)&lt;/li>
+&lt;/ul>
+&lt;h4 id="라즈베리파이에서-예시-python">
+ 라즈베리파이에서 예시 (Python):
+ &lt;a class="anchor" href="#%eb%9d%bc%ec%a6%88%eb%b2%a0%eb%a6%ac%ed%8c%8c%ec%9d%b4%ec%97%90%ec%84%9c-%ec%98%88%ec%8b%9c-python">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-python" data-lang="python">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> paho.mqtt.client &lt;span style="color:#66d9ef">as&lt;/span> mqtt
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> json
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>client &lt;span style="color:#f92672">=&lt;/span> mqtt&lt;span style="color:#f92672">.&lt;/span>Client()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>client&lt;span style="color:#f92672">.&lt;/span>connect(&lt;span style="color:#e6db74">&amp;#34;your.server.ip&amp;#34;&lt;/span>, &lt;span style="color:#ae81ff">1883&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>data &lt;span style="color:#f92672">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;device_id&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;raspi-01&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;temperature&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">25.5&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;humidity&amp;#34;&lt;/span>: &lt;span style="color:#ae81ff">60.3&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>client&lt;span style="color:#f92672">.&lt;/span>publish(&lt;span style="color:#e6db74">&amp;#34;sensor/data&amp;#34;&lt;/span>, json&lt;span style="color:#f92672">.&lt;/span>dumps(data))
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="go-서버에서-수신-mqtt-subscriber">
+ Go 서버에서 수신 (MQTT Subscriber):
+ &lt;a class="anchor" href="#go-%ec%84%9c%eb%b2%84%ec%97%90%ec%84%9c-%ec%88%98%ec%8b%a0-mqtt-subscriber">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">StartMQTTSubscriber&lt;/span>(&lt;span style="color:#a6e22e">db&lt;/span> &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">gorm&lt;/span>.&lt;span style="color:#a6e22e">DB&lt;/span>, &lt;span style="color:#a6e22e">broker&lt;/span>, &lt;span style="color:#a6e22e">topic&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">opts&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">paho_mqtt_golang&lt;/span>.&lt;span style="color:#a6e22e">NewClientOptions&lt;/span>().&lt;span style="color:#a6e22e">AddBroker&lt;/span>(&lt;span style="color:#a6e22e">broker&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">client&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">paho_mqtt_golang&lt;/span>.&lt;span style="color:#a6e22e">NewClient&lt;/span>(&lt;span style="color:#a6e22e">opts&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">client&lt;/span>.&lt;span style="color:#a6e22e">Connect&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">token&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">client&lt;/span>.&lt;span style="color:#a6e22e">Subscribe&lt;/span>(&lt;span style="color:#a6e22e">topic&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>, &lt;span style="color:#66d9ef">func&lt;/span>(&lt;span style="color:#a6e22e">client&lt;/span> &lt;span style="color:#a6e22e">paho_mqtt_golang&lt;/span>.&lt;span style="color:#a6e22e">Client&lt;/span>, &lt;span style="color:#a6e22e">msg&lt;/span> &lt;span style="color:#a6e22e">paho_mqtt_golang&lt;/span>.&lt;span style="color:#a6e22e">Message&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">var&lt;/span> &lt;span style="color:#a6e22e">data&lt;/span> &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">json&lt;/span>.&lt;span style="color:#a6e22e">Unmarshal&lt;/span>(&lt;span style="color:#a6e22e">msg&lt;/span>.&lt;span style="color:#a6e22e">Payload&lt;/span>(), &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">data&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">sensor&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#a6e22e">models&lt;/span>.&lt;span style="color:#a6e22e">SensorData&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#a6e22e">DeviceID&lt;/span>: &lt;span style="color:#a6e22e">data&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;device_id&amp;#34;&lt;/span>].(&lt;span style="color:#66d9ef">string&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#a6e22e">Temperature&lt;/span>: float32(&lt;span style="color:#a6e22e">data&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;temperature&amp;#34;&lt;/span>].(&lt;span style="color:#66d9ef">float64&lt;/span>)),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#a6e22e">Humidity&lt;/span>: float32(&lt;span style="color:#a6e22e">data&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;humidity&amp;#34;&lt;/span>].(&lt;span style="color:#66d9ef">float64&lt;/span>)),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">db&lt;/span>.&lt;span style="color:#a6e22e">Create&lt;/span>(&lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">sensor&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	})
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">token&lt;/span>.&lt;span style="color:#a6e22e">Wait&lt;/span>()
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
+&lt;h3 id="3-websocket-선택사항">
+ 3) &lt;strong>WebSocket&lt;/strong> (선택사항)
+ &lt;a class="anchor" href="#3-websocket-%ec%84%a0%ed%83%9d%ec%82%ac%ed%95%ad">#&lt;/a>
+&lt;/h3>
+&lt;ul>
+&lt;li>실시간 양방향 통신 필요 시&lt;/li>
+&lt;li>예: 서버 → 라즈베리파이로 커맨드 전달 (예: LED 켜짐/꺼짐 명령)&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="-3-보안-관련-고려-사항">
+ 🔐 3. 보안 관련 고려 사항
+ &lt;a class="anchor" href="#-3-%eb%b3%b4%ec%95%88-%ea%b4%80%eb%a0%a8-%ea%b3%a0%eb%a0%a4-%ec%82%ac%ed%95%ad">#&lt;/a>
+&lt;/h2>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>항목&lt;/th>
+ &lt;th>설명&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;strong>HTTPS&lt;/strong>&lt;/td>
+ &lt;td>반드시 TLS 적용 (&lt;code>Let's Encrypt&lt;/code>)&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>인증&lt;/strong>&lt;/td>
+ &lt;td>JWT 토큰이나 API Key로 접근 제어&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>IP 제한&lt;/strong>&lt;/td>
+ &lt;td>특정 IP(라즈베리파이의 공인 IP)만 접근 허용&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>Rate Limiting&lt;/strong>&lt;/td>
+ &lt;td>과다 요청 차단&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>로그 기록&lt;/strong>&lt;/td>
+ &lt;td>누가 언제 어떤 데이터를 보냈는지 기록&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;hr>
+&lt;h2 id="-4-네트워크-설정-주의점">
+ 🌐 4. 네트워크 설정 주의점
+ &lt;a class="anchor" href="#-4-%eb%84%a4%ed%8a%b8%ec%9b%8c%ed%81%ac-%ec%84%a4%ec%a0%95-%ec%a3%bc%ec%9d%98%ec%a0%90">#&lt;/a>
+&lt;/h2>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>항목&lt;/th>
+ &lt;th>설명&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;strong>공인 IP vs 내부망&lt;/strong>&lt;/td>
+ &lt;td>외부에서 접근 가능해야 함&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>방화벽 설정&lt;/strong>&lt;/td>
+ &lt;td>API 포트(&lt;code>80&lt;/code>, &lt;code>443&lt;/code>), MQTT 포트(&lt;code>1883&lt;/code>, &lt;code>8883&lt;/code>) 열기&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>DDNS&lt;/strong>&lt;/td>
+ &lt;td>공인 IP가 변하는 경우 도메인으로 고정 관리 가능&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>NAT 설정&lt;/strong>&lt;/td>
+ &lt;td>라우터에서 포트 포워딩 필요할 수 있음&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;hr>
+&lt;h2 id="-5-운영-환경-구성-추천">
+ 📦 5. 운영 환경 구성 추천
+ &lt;a class="anchor" href="#-5-%ec%9a%b4%ec%98%81-%ed%99%98%ea%b2%bd-%ea%b5%ac%ec%84%b1-%ec%b6%94%ec%b2%9c">#&lt;/a>
+&lt;/h2>
+&lt;blockquote>
+&lt;p>아래는 Docker + Traefik + Go + MySQL 구성입니다.&lt;/p></description></item><item><title>(.)zshrc</title><link>http://localhost:1313/docs/book/terminal/omz/.zshrc/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/omz/.zshrc/</guid><description>&lt;pre tabindex="0">&lt;code>export ZSH=&amp;#34;$HOME/.oh-my-zsh&amp;#34;
+ZSH_THEME=&amp;#34;robbyrussedll&amp;#34;
+source $ZSH/oh-my-zsh.sh
+alias ls=&amp;#39;ls -F --color=never&amp;#39;
+eval &amp;#34;$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)&amp;#34;
+&lt;/code>&lt;/pre></description></item><item><title>4부터 256까지</title><link>http://localhost:1313/docs/book/color/rgb/4%EB%B6%80%ED%84%B0-256%EA%B9%8C%EC%A7%80/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/color/rgb/4%EB%B6%80%ED%84%B0-256%EA%B9%8C%EC%A7%80/</guid><description>&lt;pre tabindex="0">&lt;code>0
+
+4
+
+8
+
+12
+
+16
+
+20
+
+24
+
+28
+
+32
+
+36
+
+40
+
+44
+
+48
+
+52
+
+56
+
+60
+
+64
+
+68
+
+72
+
+76
+
+80
+
+84
+
+88
+
+92
+
+96
+
+100
+
+104
+
+108
+
+112
+
+116
+
+120
+
+124
+
+128
+
+132
+
+136
+
+140
+
+144
+
+148
+
+152
+
+156
+
+160
+
+164
+
+168
+
+172
+
+176
+
+180
+
+184
+
+188
+
+192
+
+196
+
+200
+
+204
+
+208
+
+212
+
+216
+
+220
+
+224
+
+228
+
+232
+
+236
+
+240
+
+244
+
+248
+
+252
+&lt;/code>&lt;/pre></description></item><item><title>add와 commit</title><link>http://localhost:1313/docs/book/git/add%EC%99%80-commit/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/git/add%EC%99%80-commit/</guid><description>&lt;p>Git에서 변경사항을 저장하는 주요 단계는 &lt;code>git add&lt;/code>와 &lt;code>git commit&lt;/code>입니다. 아래는 각 단계에 대한 간략한 설명입니다.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>변경사항 스테이징 (&lt;code>git add&lt;/code>):&lt;/strong>
+변경한 파일들 중에서 어떤 것들을 저장할지를 선택하는 단계입니다. 모든 변경사항을 스테이징 영역에 올리려면 다음과 같이 명령어를 사용합니다.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>git add .
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>여기서 &lt;code>.&lt;/code>은 현재 디렉토리의 모든 파일과 하위 디렉토리를 의미합니다. 만약 특정 파일만 스테이징하고 싶다면 파일명을 지정합니다.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>git add filename
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>변경사항 커밋 (&lt;code>git commit&lt;/code>):&lt;/strong>
+스테이징 영역에 올라간 변경사항들을 로컬 저장소에 영구히 저장하는 단계입니다.&lt;/p></description></item><item><title>alacritty.toml</title><link>http://localhost:1313/docs/book/terminal/alacritty/alacritty.toml/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/alacritty/alacritty.toml/</guid><description>&lt;p>alacritty.toml&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ~/.config/alacritty/alacritty.toml&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># windows&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">terminal&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">terminal&lt;/span>.&lt;span style="color:#a6e22e">shell&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">program&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;wsl&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">args&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;~&amp;#34;&lt;/span>,]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">font&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">size&lt;/span> = &lt;span style="color:#ae81ff">12.0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">font&lt;/span>.&lt;span style="color:#a6e22e">normal&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">family&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;RobotoMono Nerd Font&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">style&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;Regular&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[[&lt;span style="color:#a6e22e">keyboard&lt;/span>.&lt;span style="color:#a6e22e">bindings&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">key&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;Space&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">mods&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;Control&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">chars&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;\u0000&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>AWS 연결하는 방법</title><link>http://localhost:1313/docs/book/%EC%9B%90%EA%B2%A9-%EC%A0%80%EC%9E%A5%EC%86%8C/aws/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%EC%9B%90%EA%B2%A9-%EC%A0%80%EC%9E%A5%EC%86%8C/aws/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/</guid><description>&lt;p>&lt;code>ssh -i /AWS/Proejct/aws-seoul-key.pem ubuntu@ec2-13-125-209-24.ap-northeast-2.compute.amazonaws.com&lt;/code>&lt;/p></description></item><item><title>BEM</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/bem/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/bem/</guid><description>&lt;p>Block, Element, Modifier(속성)&lt;/p>
+&lt;p>Element&lt;/p>
+&lt;p>예) header__logo&lt;/p>
+&lt;p>Modifier&lt;/p>
+&lt;p>예) block-name_modifier-name
+예) block-name__element-name_modifier-name
+예) search-form__button_disabled&lt;/p>
+&lt;p>(형태)(의미)(순서)_(상태)&lt;/p>
+&lt;p>wrapper - 페이지 전체 영역 그룹핑
+header - 머리글 영역
+container - 본문영역 그룹핑
+content - 주용컨텐츠 영역
+footer - 바닥글
+popWrapper - 팝업 페이지 전체 영역 그룹핑
+popHeader - 팝업 머리글 영역
+popContainer - 팝업 본문영역 그룹핑
+popContent -  팝업 주용컨텐츠 영역
+popFooter - 팝업 바닥글
+gnbNav - 글로벌 네이게이션 영역 메뉴
+lnbNav - 로컬 네비게이션 영역의 메뉴
+snbNav - 사이드 네이게이션 영역의 메뉴&lt;/p></description></item><item><title>Certbot</title><link>http://localhost:1313/docs/book/ssl/certbot/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/ssl/certbot/</guid><description>&lt;p>certbot renew &amp;ndash;dry-run : 인증서 갱신 테스트
+certbot renew : 인증서 갱신
+certbot certificates : 인증서 만료일 확인&lt;/p></description></item><item><title>CMakeLists.txt</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/cc++/cmake/cmakelists.txt/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/cc++/cmake/cmakelists.txt/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-CMakeLists.txt" data-lang="CMakeLists.txt">&lt;span style="display:flex;">&lt;span>cmake_minimum_required(&lt;span style="color:#e6db74">VERSION&lt;/span> &lt;span style="color:#e6db74">3.10&lt;/span>)&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">&lt;/span>project(&lt;span style="color:#e6db74">MyProject&lt;/span>)&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">&lt;/span>file(&lt;span style="color:#e6db74">GLOB_RECURSE&lt;/span> &lt;span style="color:#e6db74">SOURCES&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;src/*.cpp&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;src/*.c&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;src/*.h&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">&lt;/span>add_executable(&lt;span style="color:#f92672">${&lt;/span>PROJECT_NAME&lt;span style="color:#f92672">}&lt;/span> &lt;span style="color:#f92672">${&lt;/span>SOURCES&lt;span style="color:#f92672">}&lt;/span>)&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">&lt;/span>include_directories(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">src/header&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">&lt;/span>target_link_libraries(&lt;span style="color:#f92672">${&lt;/span>PROJECT_NAME&lt;span style="color:#f92672">}&lt;/span> &lt;span style="color:#e6db74">m&lt;/span>)&lt;span style="color:#960050;background-color:#1e0010">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Color 조합</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/color-%EC%A1%B0%ED%95%A9/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/color-%EC%A1%B0%ED%95%A9/</guid><description>&lt;p>0, 111, 222
+30, 130, 230&lt;/p></description></item><item><title>colorscheme.lua</title><link>http://localhost:1313/docs/book/terminal/neovim/plugins/colorscheme.lua/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/neovim/plugins/colorscheme.lua/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-lua" data-lang="lua">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- lua/plugins/colorscheme.lua&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">return&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">-- add&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> { &lt;span style="color:#e6db74">&amp;#34;sainnhe/sonokai&amp;#34;&lt;/span> },
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">-- Configure LazyVim to load sonokai&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;LazyVim/LazyVim&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> opts &lt;span style="color:#f92672">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> colorscheme &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;sonokai&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Conan으로 C언어 프로젝트 디버그, 컴파일, 실행하는 방법 요약</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/powershell/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/powershell/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/</guid><description>&lt;h2 id="주요-파일-구성">
+ 주요 파일 구성
+ &lt;a class="anchor" href="#%ec%a3%bc%ec%9a%94-%ed%8c%8c%ec%9d%bc-%ea%b5%ac%ec%84%b1">#&lt;/a>
+&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>CMakeLists.txt&lt;/strong> - 빌드 구성&lt;/p>
+&lt;ul>
+&lt;li>모든 소스 파일 자동 수집 (&lt;code>GLOB_RECURSE&lt;/code>)&lt;/li>
+&lt;li>빌드 결과물 위치 지정 (&lt;code>CMAKE_RUNTIME_OUTPUT_DIRECTORY&lt;/code>)&lt;/li>
+&lt;li>외부 라이브러리 설정 (ZLIB, GTest)&lt;/li>
+&lt;li>컴파일러 경고 설정&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>conanfile.txt&lt;/strong> - 종속성 관리&lt;/p>
+&lt;ul>
+&lt;li>필요한 외부 라이브러리 지정&lt;/li>
+&lt;li>빌드 옵션 설정&lt;/li>
+&lt;li>라이브러리 파일 임포트 방식 지정&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>빌드 스크립트&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>build.bat&lt;/code> - 프로젝트 빌드&lt;/li>
+&lt;li>&lt;code>run.bat&lt;/code> - 프로그램 실행&lt;/li>
+&lt;li>&lt;code>clean.bat&lt;/code> - 빌드 파일 정리&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>VS Code 설정&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>tasks.json&lt;/code> - 빌드 작업 자동화&lt;/li>
+&lt;li>&lt;code>launch.json&lt;/code> - 디버깅 설정&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="주요-명령어">
+ 주요 명령어
+ &lt;a class="anchor" href="#%ec%a3%bc%ec%9a%94-%eb%aa%85%eb%a0%b9%ec%96%b4">#&lt;/a>
+&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>빌드하기&lt;/strong>: &lt;code>build.bat [Debug|Release]&lt;/code>&lt;/p></description></item><item><title>config</title><link>http://localhost:1313/docs/book/terminal/ghostty/config/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/ghostty/config/</guid><description>&lt;pre tabindex="0">&lt;code># font
+font-family = &amp;#34;RobotoMono Nerd Font&amp;#34;
+
+# window
+window-padding-balance = true
+window-padding-x = 0
+window-padding-y = 0
+&lt;/code>&lt;/pre></description></item><item><title>Curl 명령어</title><link>http://localhost:1313/docs/book/terminal/curl-%EB%AA%85%EB%A0%B9%EC%96%B4/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/curl-%EB%AA%85%EB%A0%B9%EC%96%B4/</guid><description>&lt;h2 id="get">
+ GET
+ &lt;a class="anchor" href="#get">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>curl http://localhost:8080/api/products
+&lt;/code>&lt;/pre>&lt;h2 id="post">
+ POST
+ &lt;a class="anchor" href="#post">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>curl -X POST \
+ http://localhost:8080/api/products \
+ -H &amp;#39;Content-Type: application/json&amp;#39; \
+ -d &amp;#39;{
+ &amp;#34;Type&amp;#34;: &amp;#34;HomeGoods&amp;#34;,
+ &amp;#34;ZoneId&amp;#34;: &amp;#34;Z02&amp;#34;,
+ &amp;#34;CurrentStatus&amp;#34;: &amp;#34;Available&amp;#34;
+ }&amp;#39;
+&lt;/code>&lt;/pre>&lt;h2 id="put">
+ PUT
+ &lt;a class="anchor" href="#put">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>curl -X PUT \
+ http://localhost:8080/api/products/1 \
+ -H &amp;#39;Content-Type: application/json&amp;#39; \
+ -d &amp;#39;{
+ &amp;#34;Type&amp;#34;: &amp;#34;AutomotiveParts&amp;#34;,
+ &amp;#34;CurrentStatus&amp;#34;: &amp;#34;Processing&amp;#34;
+ }&amp;#39;
+&lt;/code>&lt;/pre>&lt;h2 id="delete">
+ DELETE
+ &lt;a class="anchor" href="#delete">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>curl -X DELETE \
+ http://localhost:8080/api/products/1
+&lt;/code>&lt;/pre></description></item><item><title>echo</title><link>http://localhost:1313/docs/book/terminal/%EB%AA%85%EB%A0%B9%EC%96%B4/echo/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/%EB%AA%85%EB%A0%B9%EC%96%B4/echo/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>echo &lt;span style="color:#e6db74">&amp;#34;Hello, World!&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>Hello, World!
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="예제">
+ 예제
+ &lt;a class="anchor" href="#%ec%98%88%ec%a0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>-e &lt;span style="color:#75715e"># 이스케이프 시퀀스 해석&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>echo -e &lt;span style="color:#e6db74">&amp;#34;abc\ndef&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>abc
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>def
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>failed WebSocket is closed due to suspension.</title><link>http://localhost:1313/docs/book/web/nextjs/%EC%98%A4%EB%A5%98/failed-websocket-is-closed-due-to-suspension./</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EC%98%A4%EB%A5%98/failed-websocket-is-closed-due-to-suspension./</guid><description>&lt;p>&lt;a href="https://github.com/vercel/next.js/issues/30491">https://github.com/vercel/next.js/issues/30491&lt;/a>&lt;/p></description></item><item><title>Flux 패턴 간단 예제</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/react/flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/react/flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-ts" data-lang="ts">&lt;span style="display:flex;">&lt;span>&amp;lt;&lt;span style="color:#f92672">script&lt;/span> &lt;span style="color:#a6e22e">lang&lt;/span>&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;ts&amp;#34;&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">import&lt;/span> &lt;span style="color:#a6e22e">Button&lt;/span> &lt;span style="color:#66d9ef">from&lt;/span> &lt;span style="color:#e6db74">&amp;#39;$lib/components/ui/Button.svelte&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">import&lt;/span> { &lt;span style="color:#a6e22e">createStore&lt;/span> } &lt;span style="color:#66d9ef">from&lt;/span> &lt;span style="color:#e6db74">&amp;#39;$lib/flux/store&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">store&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">createStore&lt;/span>&amp;lt;&lt;span style="color:#f92672">number&lt;/span>&amp;gt;(&lt;span style="color:#ae81ff">0&lt;/span>, (&lt;span style="color:#a6e22e">state&lt;/span>: &lt;span style="color:#66d9ef">number&lt;/span>, &lt;span style="color:#a6e22e">action&lt;/span>&lt;span style="color:#f92672">:&lt;/span> { &lt;span style="color:#66d9ef">type&lt;/span>&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span> })&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#66d9ef">number&lt;/span> &lt;span style="color:#f92672">=&amp;gt;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">switch&lt;/span> (&lt;span style="color:#a6e22e">action&lt;/span>.&lt;span style="color:#66d9ef">type&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#e6db74">&amp;#39;INCREMENT&amp;#39;&lt;/span>&lt;span style="color:#f92672">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">state&lt;/span> &lt;span style="color:#f92672">+&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">case&lt;/span> &lt;span style="color:#e6db74">&amp;#39;DECREMENT&amp;#39;&lt;/span>&lt;span style="color:#f92672">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">state&lt;/span> &lt;span style="color:#f92672">-&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">default&lt;/span>&lt;span style="color:#f92672">:&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">state&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	});
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;/&lt;span style="color:#f92672">script&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;&lt;span style="color:#f92672">div&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&amp;lt;&lt;span style="color:#f92672">Button&lt;/span> &lt;span style="color:#a6e22e">onclick&lt;/span>&lt;span style="color:#f92672">=&lt;/span>{() &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#a6e22e">store&lt;/span>.&lt;span style="color:#a6e22e">dispatch&lt;/span>({ &lt;span style="color:#66d9ef">type&lt;/span>&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#39;DECREMENT&amp;#39;&lt;/span> })}&amp;gt;&lt;span style="color:#f92672">-&lt;/span>&amp;lt;/&lt;span style="color:#f92672">Button&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&amp;lt;&lt;span style="color:#f92672">span&lt;/span>&amp;gt;{&lt;span style="color:#a6e22e">store&lt;/span>.&lt;span style="color:#a6e22e">getState&lt;/span>()}&amp;lt;/&lt;span style="color:#f92672">span&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&amp;lt;&lt;span style="color:#f92672">Button&lt;/span> &lt;span style="color:#a6e22e">onclick&lt;/span>&lt;span style="color:#f92672">=&lt;/span>{() &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#a6e22e">store&lt;/span>.&lt;span style="color:#a6e22e">dispatch&lt;/span>({ &lt;span style="color:#66d9ef">type&lt;/span>&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#39;INCREMENT&amp;#39;&lt;/span> })}&amp;gt;&lt;span style="color:#f92672">+&lt;/span>&amp;lt;/&lt;span style="color:#f92672">Button&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&amp;lt;/&lt;span style="color:#f92672">div&lt;/span>&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-ts" data-lang="ts">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">export&lt;/span> &lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">Action&lt;/span> &lt;span style="color:#f92672">=&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">type&lt;/span>&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#66d9ef">string&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">export&lt;/span> &lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">Dispatcher&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt; {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#a6e22e">listeners&lt;/span>: &lt;span style="color:#66d9ef">Array&lt;/span>&lt;span style="color:#f92672">&amp;lt;&lt;/span>(&lt;span style="color:#a6e22e">action&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>) &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span>&lt;span style="color:#f92672">&amp;gt;&lt;/span> &lt;span style="color:#f92672">=&lt;/span> [];
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">register&lt;/span>(&lt;span style="color:#a6e22e">listener&lt;/span>&lt;span style="color:#f92672">:&lt;/span> (&lt;span style="color:#a6e22e">action&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>) &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span>)&lt;span style="color:#f92672">:&lt;/span> () &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">listeners&lt;/span>.&lt;span style="color:#a6e22e">push&lt;/span>(&lt;span style="color:#a6e22e">listener&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">return&lt;/span> () &lt;span style="color:#f92672">=&amp;gt;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">listeners&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">listeners&lt;/span>.&lt;span style="color:#a6e22e">filter&lt;/span>((&lt;span style="color:#a6e22e">l&lt;/span>) &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#a6e22e">l&lt;/span> &lt;span style="color:#f92672">!==&lt;/span> &lt;span style="color:#a6e22e">listener&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">dispatch&lt;/span>(&lt;span style="color:#a6e22e">action&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>)&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">listeners&lt;/span>.&lt;span style="color:#a6e22e">forEach&lt;/span>((&lt;span style="color:#a6e22e">listener&lt;/span>) &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#a6e22e">listener&lt;/span>(&lt;span style="color:#a6e22e">action&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-ts" data-lang="ts">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">import&lt;/span> { &lt;span style="color:#a6e22e">Dispatcher&lt;/span>, &lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">Action&lt;/span> } &lt;span style="color:#66d9ef">from&lt;/span> &lt;span style="color:#e6db74">&amp;#39;$lib/flux/dispatcher&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">Reducer&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt; &lt;span style="color:#f92672">=&lt;/span> (&lt;span style="color:#a6e22e">state&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>, &lt;span style="color:#a6e22e">action&lt;/span>: &lt;span style="color:#66d9ef">Action&lt;/span>) &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#a6e22e">T&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">export&lt;/span> &lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">Store&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt; {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#a6e22e">state&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#a6e22e">dispatcher&lt;/span>: &lt;span style="color:#66d9ef">Dispatcher&lt;/span>&amp;lt;&lt;span style="color:#f92672">Action&lt;/span>&amp;gt; &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">Dispatcher&lt;/span>();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">private&lt;/span> &lt;span style="color:#a6e22e">reducer&lt;/span>: &lt;span style="color:#66d9ef">Reducer&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">constructor&lt;/span>(&lt;span style="color:#a6e22e">state&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>, &lt;span style="color:#a6e22e">reducer&lt;/span>: &lt;span style="color:#66d9ef">Reducer&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt;) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">state&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">state&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">reducer&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">reducer&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">getState&lt;/span>()&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#a6e22e">T&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">state&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">dispatch&lt;/span>(&lt;span style="color:#a6e22e">action&lt;/span>: &lt;span style="color:#66d9ef">Action&lt;/span>)&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">console&lt;/span>.&lt;span style="color:#a6e22e">log&lt;/span>(&lt;span style="color:#e6db74">&amp;#39;state&amp;#39;&lt;/span>, &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">state&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">state&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">reducer&lt;/span>(&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">state&lt;/span>, &lt;span style="color:#a6e22e">action&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">dispatcher&lt;/span>.&lt;span style="color:#a6e22e">dispatch&lt;/span>(&lt;span style="color:#a6e22e">action&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">subscribe&lt;/span>(&lt;span style="color:#a6e22e">listener&lt;/span>&lt;span style="color:#f92672">:&lt;/span> () &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span>)&lt;span style="color:#f92672">:&lt;/span> () &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#66d9ef">void&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">unregister&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">dispatcher&lt;/span>.&lt;span style="color:#a6e22e">register&lt;/span>(() &lt;span style="color:#f92672">=&amp;gt;&lt;/span> &lt;span style="color:#a6e22e">listener&lt;/span>());
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">return&lt;/span> () &lt;span style="color:#f92672">=&amp;gt;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#a6e22e">unregister&lt;/span>();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">export&lt;/span> &lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">createStore&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt;(&lt;span style="color:#a6e22e">state&lt;/span>: &lt;span style="color:#66d9ef">T&lt;/span>, &lt;span style="color:#a6e22e">reducer&lt;/span>: &lt;span style="color:#66d9ef">Reducer&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt;)&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#a6e22e">Store&lt;/span>&amp;lt;&lt;span style="color:#f92672">T&lt;/span>&amp;gt; &lt;span style="color:#f92672">=&amp;gt;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">Store&lt;/span>(&lt;span style="color:#a6e22e">state&lt;/span>, &lt;span style="color:#a6e22e">reducer&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>};
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>작동은 되지 않는다. 왜냐하면 Svelte 환경은 React와 다르기 때문이다.&lt;/p></description></item><item><title>Font Size</title><link>http://localhost:1313/docs/book/font/font-size/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/font/font-size/</guid><description>&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th style="text-align: center">Size&lt;/th>
+ &lt;th style="text-align: center">Desktop&lt;/th>
+ &lt;th style="text-align: center">Tablet&lt;/th>
+ &lt;th style="text-align: center">Mobile&lt;/th>
+ &lt;th>&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td style="text-align: center">10px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">11px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">12px&lt;/td>
+ &lt;td style="text-align: center">comment-text, default-text&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">main-text&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">13px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">main-text&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">14px&lt;/td>
+ &lt;td style="text-align: center">main-text&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">title-text&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">15px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">title-text&lt;/td>
+ &lt;td style="text-align: center">head-text, subtitle&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">16px&lt;/td>
+ &lt;td style="text-align: center">title-text&lt;/td>
+ &lt;td style="text-align: center">head-text, subtitle&lt;/td>
+ &lt;td style="text-align: center">subhead, title&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">20px&lt;/td>
+ &lt;td style="text-align: center">subtitle, head-text&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">24px&lt;/td>
+ &lt;td style="text-align: center">item-text&lt;/td>
+ &lt;td style="text-align: center">subhead, title&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">32px&lt;/td>
+ &lt;td style="text-align: center">subhead, title&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">headline&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">36px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">40px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">48px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">headline&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">64px&lt;/td>
+ &lt;td style="text-align: center">headline&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">96px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td style="text-align: center">128px&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td style="text-align: center">&lt;/td>
+ &lt;td>&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;p>100, Thin -
+200, Extra Light -
+300, Light -
+400, Regular - comment-text, default-text
+500, Medium - item-text, head-text, main-text, item-text, title-text
+600, SemiBold - subhead, subtitle
+700, Bold - headline, title
+800, ExtraBold -
+900, Black -&lt;/p></description></item><item><title>gradient image</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/gradient-image/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/gradient-image/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-css" data-lang="css">&lt;span style="display:flex;">&lt;span>.&lt;span style="color:#a6e22e">image-1&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-color&lt;/span>: hsla(&lt;span style="color:#ae81ff">173&lt;/span>, &lt;span style="color:#ae81ff">77&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">83&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-image&lt;/span>: radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">7&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">81&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			hsla(&lt;span style="color:#ae81ff">104.5588235294118&lt;/span>, &lt;span style="color:#ae81ff">91&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">91&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">16&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">53&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">11&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">29&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">213&lt;/span>, &lt;span style="color:#ae81ff">97&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">8&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">74&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">21&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">14&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			hsla(&lt;span style="color:#ae81ff">149&lt;/span>, &lt;span style="color:#ae81ff">93&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">64&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">14.288924492243542&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">68&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">90&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">50&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">118&lt;/span>, &lt;span style="color:#ae81ff">94&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">89&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">2&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">5&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">250&lt;/span>, &lt;span style="color:#ae81ff">76&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">61&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">7&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">84&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-blend-mode&lt;/span>: &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>.&lt;span style="color:#a6e22e">image-2&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-color&lt;/span>: hsla(&lt;span style="color:#ae81ff">195&lt;/span>, &lt;span style="color:#ae81ff">82&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-image&lt;/span>: radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">15&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			hsla(&lt;span style="color:#ae81ff">320&lt;/span>, &lt;span style="color:#ae81ff">95&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">89&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">12&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">60&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">95&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">180&lt;/span>, &lt;span style="color:#ae81ff">90&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">70&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">10&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">70&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">15&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">25&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">45&lt;/span>, &lt;span style="color:#ae81ff">95&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">15&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">65&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">10&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">90&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">280&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">5&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		radial-gradient(&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">50&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">50&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, hsla(&lt;span style="color:#ae81ff">150&lt;/span>, &lt;span style="color:#ae81ff">90&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">8&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-blend-mode&lt;/span>: &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>.&lt;span style="color:#a6e22e">image-3&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-color&lt;/span>: hsla(&lt;span style="color:#ae81ff">210&lt;/span>, &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">92&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>); &lt;span style="color:#75715e">/* 부드러운 하늘색 베이스 */&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-image&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">20&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">20&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		hsla(&lt;span style="color:#ae81ff">340&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">18&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">58&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		hsla(&lt;span style="color:#ae81ff">135&lt;/span>, &lt;span style="color:#ae81ff">90&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">15&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">65&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">25&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		hsla(&lt;span style="color:#ae81ff">55&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">12&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">70&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">25&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		hsla(&lt;span style="color:#ae81ff">200&lt;/span>, &lt;span style="color:#ae81ff">95&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">10&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">75&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	),
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	radial-gradient(
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">circle&lt;/span> at &lt;span style="color:#ae81ff">50&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span> &lt;span style="color:#ae81ff">40&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		hsla(&lt;span style="color:#ae81ff">290&lt;/span>, &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">85&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>, &lt;span style="color:#ae81ff">1&lt;/span>) &lt;span style="color:#ae81ff">8&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#66d9ef">transparent&lt;/span> &lt;span style="color:#ae81ff">80&lt;/span>&lt;span style="color:#66d9ef">%&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background-blend-mode&lt;/span>: &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>, &lt;span style="color:#66d9ef">normal&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>keymaps.lua</title><link>http://localhost:1313/docs/book/terminal/neovim/config/keymaps.lua/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/neovim/config/keymaps.lua/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-lua" data-lang="lua">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- Keymaps are automatically loaded on the VeryLazy event&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- Add any additional keymaps here&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- telescope&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">local&lt;/span> builtin &lt;span style="color:#f92672">=&lt;/span> require(&lt;span style="color:#e6db74">&amp;#34;telescope.builtin&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>vim.keymap.set(&lt;span style="color:#e6db74">&amp;#34;n&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;lt;leader&amp;gt;ff&amp;#34;&lt;/span>, builtin.find_files, { desc &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Telescope find files&amp;#34;&lt;/span> })
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>vim.keymap.set(&lt;span style="color:#e6db74">&amp;#34;n&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;lt;leader&amp;gt;fg&amp;#34;&lt;/span>, builtin.live_grep, { desc &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Telescope live grep&amp;#34;&lt;/span> })
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>vim.keymap.set(&lt;span style="color:#e6db74">&amp;#34;n&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;lt;leader&amp;gt;fb&amp;#34;&lt;/span>, builtin.buffers, { desc &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Telescope buffers&amp;#34;&lt;/span> })
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>vim.keymap.set(&lt;span style="color:#e6db74">&amp;#34;n&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;&amp;lt;leader&amp;gt;fh&amp;#34;&lt;/span>, builtin.help_tags, { desc &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Telescope help tags&amp;#34;&lt;/span> })
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>language.toml</title><link>http://localhost:1313/docs/book/text-editor/helix/config/config.toml/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/text-editor/helix/config/config.toml/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ~/.config/helix/config.toml&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">theme&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;onedark&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">editor&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">line-number&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;relative&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">mouse&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">editor&lt;/span>.&lt;span style="color:#a6e22e">cursor-shape&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">insert&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;bar&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">normal&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;block&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">select&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;underline&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">editor&lt;/span>.&lt;span style="color:#a6e22e">file-picker&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">hidden&lt;/span> = &lt;span style="color:#66d9ef">false&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">editor&lt;/span>.&lt;span style="color:#a6e22e">soft-wrap&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">enable&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">keys&lt;/span>.&lt;span style="color:#a6e22e">normal&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">A-up&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;extend_to_line_bounds&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;delete_selection&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;move_line_up&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;paste_before&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">A-down&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;extend_to_line_bounds&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;delete_selection&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;paste_after&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">keys&lt;/span>.&lt;span style="color:#a6e22e">insert&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">C-s&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;:w&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Oracle 연결</title><link>http://localhost:1313/docs/book/%EC%9B%90%EA%B2%A9-%EC%A0%80%EC%9E%A5%EC%86%8C/oracle/oracle-%EC%97%B0%EA%B2%B0/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%EC%9B%90%EA%B2%A9-%EC%A0%80%EC%9E%A5%EC%86%8C/oracle/oracle-%EC%97%B0%EA%B2%B0/</guid><description>&lt;p>&lt;code>ssh -i /Oracle/Project/ssh-key-2023-07-24.key ubuntu@158.180.88.241&lt;/code>&lt;/p></description></item><item><title>pm2</title><link>http://localhost:1313/docs/book/%ED%8C%A8%ED%82%A4%EC%A7%80-%EA%B4%80%EB%A6%AC%EC%9E%90/npm/pm2/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%8C%A8%ED%82%A4%EC%A7%80-%EA%B4%80%EB%A6%AC%EC%9E%90/npm/pm2/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 설치&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>npm install pm2 -g
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 시작&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pm2 start npm --name webapp -- run start -- -p &lt;span style="color:#ae81ff">8080&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 재시작&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pm2 stop nextjs-app
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pm2 stop all
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pm2 delete all
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># bun&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pm2 start bun --name &lt;span style="color:#e6db74">&amp;#34;webapp&amp;#34;&lt;/span> -- run start -- --port &lt;span style="color:#ae81ff">8080&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Powerlevel10k</title><link>http://localhost:1313/docs/book/terminal/zsh/powerlevel10k/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/zsh/powerlevel10k/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>git clone --depth&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#ae81ff">1&lt;/span> https://github.com/romkatv/powerlevel10k.git &lt;span style="color:#e6db74">${&lt;/span>ZSH_CUSTOM&lt;span style="color:#66d9ef">:-&lt;/span>$HOME/.oh-my-zsh/custom&lt;span style="color:#e6db74">}&lt;/span>/themes/powerlevel10k
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>~/.zshrc&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>ZSH_THEME&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;powerlevel10k/powerlevel10k&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>Qwen 2.5 Coder</title><link>http://localhost:1313/docs/book/ai/model/qwen-2.5-coder/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/ai/model/qwen-2.5-coder/</guid><description>&lt;h2 id="32b">
+ 32B
+ &lt;a class="anchor" href="#32b">#&lt;/a>
+&lt;/h2>
+&lt;p>temperature: 0.1
+top p: 0.9&lt;/p></description></item><item><title>Table</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/table/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/table/</guid><description>&lt;p>width: 100%임에도 불구하고 화면 밖으로 나가는 문제&lt;/p>
+&lt;p>해결:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-css" data-lang="css">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">table&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">table-layout&lt;/span>: &lt;span style="color:#66d9ef">fixed&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>volume 삭제</title><link>http://localhost:1313/docs/book/docker/containers-images-volumes-builds-%EC%82%AD%EC%A0%9C/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/docker/containers-images-volumes-builds-%EC%82%AD%EC%A0%9C/</guid><description>&lt;h2 id="containers-삭제">
+ Containers 삭제
+ &lt;a class="anchor" href="#containers-%ec%82%ad%ec%a0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>docker container prune
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="images-삭제">
+ Images 삭제
+ &lt;a class="anchor" href="#images-%ec%82%ad%ec%a0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>docker image prune
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="volumes-삭제">
+ Volumes 삭제
+ &lt;a class="anchor" href="#volumes-%ec%82%ad%ec%a0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>docker volume prune
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="builds-삭제">
+ Builds 삭제
+ &lt;a class="anchor" href="#builds-%ec%82%ad%ec%a0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>docker builder prune
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>xmake.lua</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/cc++/xmake/xmake.lua/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/cc++/xmake/xmake.lua/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-lua" data-lang="lua">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 프로젝트 기본 설정&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_project(&lt;span style="color:#e6db74">&amp;#34;MyProject&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_version(&lt;span style="color:#e6db74">&amp;#34;0.0.0&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_languages(&lt;span style="color:#e6db74">&amp;#34;c99&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 공통 라이브러리 (코드 중복 방지)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>target(&lt;span style="color:#e6db74">&amp;#34;common_lib&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_kind(&lt;span style="color:#e6db74">&amp;#34;static&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_files(&lt;span style="color:#e6db74">&amp;#34;include/*/*.c&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_includedirs(&lt;span style="color:#e6db74">&amp;#34;include&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_headerfiles(&lt;span style="color:#e6db74">&amp;#34;include/*/*.h&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 메인 애플리케이션&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>target(&lt;span style="color:#e6db74">&amp;#34;main&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_kind(&lt;span style="color:#e6db74">&amp;#34;binary&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_files(&lt;span style="color:#e6db74">&amp;#34;src/*.c&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_includedirs(&lt;span style="color:#e6db74">&amp;#34;src&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;include&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_deps(&lt;span style="color:#e6db74">&amp;#34;common_lib&amp;#34;&lt;/span>) &lt;span style="color:#75715e">-- 공통 라이브러리 의존성 추가&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 테스트 타겟&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>target(&lt;span style="color:#e6db74">&amp;#34;test&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_kind(&lt;span style="color:#e6db74">&amp;#34;binary&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_files(&lt;span style="color:#e6db74">&amp;#34;tests/*.c&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_includedirs(&lt;span style="color:#e6db74">&amp;#34;tests&amp;#34;&lt;/span>, &lt;span style="color:#e6db74">&amp;#34;include&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_deps(&lt;span style="color:#e6db74">&amp;#34;common_lib&amp;#34;&lt;/span>) &lt;span style="color:#75715e">-- 공통 라이브러리 의존성 추가&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>add_defines(&lt;span style="color:#e6db74">&amp;#34;TESTING&amp;#34;&lt;/span>) &lt;span style="color:#75715e">-- 테스트 전용 매크로&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 필요한 경우에만 특별한 실행 설정 추가&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- on_run(function(target)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- os.execv(target:targetfile(), {&amp;#34;--verbose&amp;#34;}) -- 예: 특별한 인자 전달&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- end)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>zshrc 설정</title><link>http://localhost:1313/docs/book/terminal/iterm2/zshrc-%EC%84%A4%EC%A0%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/iterm2/zshrc-%EC%84%A4%EC%A0%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-zsh" data-lang="zsh">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ~/.zshrc 설정&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 기존 테마 설정&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ZSH_THEME=&amp;#34;agnoster&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 테마 수정&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ZSH_THEME&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#34;agnoster&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 컴퓨터 이름 제거&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>prompt_context&lt;span style="color:#f92672">()&lt;/span> &lt;span style="color:#f92672">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> &lt;span style="color:#f92672">[[&lt;/span> &lt;span style="color:#e6db74">&amp;#34;&lt;/span>$USER&lt;span style="color:#e6db74">&amp;#34;&lt;/span> !&lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;&lt;/span>$DEFAULT_USER&lt;span style="color:#e6db74">&amp;#34;&lt;/span> &lt;span style="color:#f92672">||&lt;/span> -n &lt;span style="color:#e6db74">&amp;#34;&lt;/span>$SSH_CLIENT&lt;span style="color:#e6db74">&amp;#34;&lt;/span> &lt;span style="color:#f92672">]]&lt;/span>; &lt;span style="color:#66d9ef">then&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> prompt_segment black default &lt;span style="color:#e6db74">&amp;#34;%(!.%{%F{yellow}%}.)&lt;/span>$USER&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">fi&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>구조</title><link>http://localhost:1313/docs/book/web/nextjs/%EA%B5%AC%EC%A1%B0/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/web/nextjs/%EA%B5%AC%EC%A1%B0/</guid><description>&lt;p>NextJS 웹앱의 권장 폴더 구조는 다음과 같습니다:&lt;/p>
+&lt;pre tabindex="0">&lt;code>my-nextjs-app/
+├── app/
+│ ├── api/
+│ ├── (routes)/
+│ ├── layout.tsx
+│ └── page.tsx
+├── components/
+├── lib/
+├── public/
+├── styles/
+├── types/
+├── utils/
+├── .env.local
+├── .gitignore
+├── next.config.js
+├── package.json
+└── tsconfig.json
+&lt;/code>&lt;/pre>&lt;p>주요 폴더 및 파일의 설명:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>app/&lt;/code>: 라우팅 및 페이지 컴포넌트&lt;/li>
+&lt;li>&lt;code>api/&lt;/code>: API 라우트&lt;/li>
+&lt;li>&lt;code>(routes)/&lt;/code>: 그룹화된 라우트&lt;/li>
+&lt;li>&lt;code>components/&lt;/code>: 재사용 가능한 UI 컴포넌트&lt;/li>
+&lt;li>&lt;code>lib/&lt;/code>: 외부 라이브러리 및 API&lt;/li>
+&lt;li>&lt;code>public/&lt;/code>: 정적 파일&lt;/li>
+&lt;li>&lt;code>styles/&lt;/code>: 전역 스타일 및 CSS 모듈&lt;/li>
+&lt;li>&lt;code>types/&lt;/code>: TypeScript 타입 정의&lt;/li>
+&lt;li>&lt;code>utils/&lt;/code>: 유틸리티 함수&lt;/li>
+&lt;/ul>
+&lt;p>이 구조는 NextJS 13 이상의 App Router를 기반으로 합니다. 프로젝트의 규모와 요구사항에 따라 조정할 수 있습니다.&lt;/p></description></item><item><title>기호 모음</title><link>http://localhost:1313/docs/book/latex/%EA%B8%B0%ED%98%B8-%EB%AA%A8%EC%9D%8C/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/latex/%EA%B8%B0%ED%98%B8-%EB%AA%A8%EC%9D%8C/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>... &lt;span style="color:#75715e">% 여러줄
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>...&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 한 줄
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>x \notin A&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 한 줄
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$x \notin A$&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>\therefore&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 결론적으로
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$\therefore$&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>\because&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 왜냐하면
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$\because$&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>\quad&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 공백
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$\quad$&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>\left{ \cdots \right}&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 중괄호
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#e6db74">$&lt;/span>\left&lt;span style="color:#f92672">[&lt;/span> \cdots \right&lt;span style="color:#f92672">]&lt;/span>&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 대괄호
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#e6db74">$&lt;/span>\left\vert \cdots \right\vert&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 바, \vert, \mid, \lvert, \rvert
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$\left{ \cdots \right}$
+$\left[ \cdots \right]$
+$\left\vert \cdots \right\vert$&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$&lt;/span>\cdots&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 수평 ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#e6db74">$&lt;/span>\vdots&lt;span style="color:#e6db74">$&lt;/span> &lt;span style="color:#75715e">% 수직 ...
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$\cdots$
+$\vdots$&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">% 여러 줄 수식 정렬
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\begin{array}{l} &lt;span style="color:#75715e">% 왼쪽 정렬
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>\end{array}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\begin{array}{r} &lt;span style="color:#75715e">% 오른쪽 정렬
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>\end{array}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\begin{array}{c} &lt;span style="color:#75715e">% 중앙 정렬
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>\end{array}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\begin{aligned} &lt;span style="color:#75715e">% 오른쪽 정렬, 기호 부등호 정렬 시 유용
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>\end{aligned}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-latex" data-lang="latex">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">% 사용 예
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\left\{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\begin{array}{l}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>a_{&lt;span style="color:#ae81ff">11&lt;/span>} X_{&lt;span style="color:#ae81ff">1&lt;/span>} &lt;span style="color:#f92672">+&lt;/span> a_{&lt;span style="color:#ae81ff">12&lt;/span>} X_{&lt;span style="color:#ae81ff">2&lt;/span>} &lt;span style="color:#f92672">+&lt;/span> \cdots &lt;span style="color:#f92672">+&lt;/span> a_{&lt;span style="color:#ae81ff">1&lt;/span>n} X_{n} &lt;span style="color:#f92672">=&lt;/span> b_{&lt;span style="color:#ae81ff">1&lt;/span>} \\
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>a_{&lt;span style="color:#ae81ff">21&lt;/span>} X_{&lt;span style="color:#ae81ff">1&lt;/span>} &lt;span style="color:#f92672">+&lt;/span> a_{&lt;span style="color:#ae81ff">22&lt;/span>} X_{&lt;span style="color:#ae81ff">2&lt;/span>} &lt;span style="color:#f92672">+&lt;/span> \cdots &lt;span style="color:#f92672">+&lt;/span> a_{&lt;span style="color:#ae81ff">2&lt;/span>n} X_{n} &lt;span style="color:#f92672">=&lt;/span> b_{&lt;span style="color:#ae81ff">2&lt;/span>} \\
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\vdots \\
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>a_{n&lt;span style="color:#ae81ff">1&lt;/span>} X_{&lt;span style="color:#ae81ff">1&lt;/span>} &lt;span style="color:#f92672">+&lt;/span> a_{n&lt;span style="color:#ae81ff">2&lt;/span>} X_{&lt;span style="color:#ae81ff">2&lt;/span>} &lt;span style="color:#f92672">+&lt;/span> \cdots &lt;span style="color:#f92672">+&lt;/span> a_{nn} X_{n} &lt;span style="color:#f92672">=&lt;/span> b_{n}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\end{array}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>\right\}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">$$&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>$$
+\left{
+\begin{array}{c}
+a_{11} X_{1} + a_{12} X_{2} + \cdots + a_{1n} X_{n} = b_{1} \
+a_{21} X_{1} + a_{22} X_{2} + \cdots + a_{2n} X_{n} = b_{2} \
+\vdots \
+a_{n1} X_{1} + a_{n2} X_{2} + \cdots + a_{nn} X_{n} = b_{n}
+\end{array}
+\right}
+$$&lt;/p></description></item><item><title>다루한의 블로그</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8/blog/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8/blog/</guid><description>&lt;p>&lt;strong>색상&lt;/strong>
+rgb(30,30,30),
+rgb(130,130,130),
+rgb(230,230,230)&lt;/p>
+&lt;p>&lt;strong>글자&lt;/strong>
+font-weight: 300, 400, 700&lt;/p>
+&lt;p>&lt;strong>할 일&lt;/strong>:
+http3으로 업그레이드
+cdn이 뭔지 알아보기
+번들링 알아보기
+캐싱 컨트롤 알아보기
+마지막 수정 날짜를 보고 캐싱 파일 빠꾸 먹이기&lt;/p></description></item><item><title>문법</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/sql/%EB%AC%B8%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/sql/%EB%AC%B8%EB%B2%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">ALTER&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">DROP&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">FROM&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">ADD&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">MODIFY&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>CHANGE
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">TABLE&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">WHERE&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">INSERT&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">INTO&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">DELETE&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">UPDATE&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">GRANT&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">ALL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">On&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 데이터 정의 언어 (DDL: Data Definition Language)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">CREATE&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 데이터 조작 언어 (DML: Data Manipulation Language)
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 데이터 제어 언어 (DCL: Data Control Language)
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>문법</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/%EB%AC%B8%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/%EB%AC%B8%EB%B2%95/</guid><description>&lt;h1 id="소개">
+ 소개
+ &lt;a class="anchor" href="#%ec%86%8c%ea%b0%9c">#&lt;/a>
+&lt;/h1>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-c" data-lang="c">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// C언어
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#include&lt;/span> &lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Hello, World!&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;pre tabindex="0">&lt;code>Hello, World!
+&lt;/code>&lt;/pre>&lt;pre tabindex="0">&lt;code>std: lib.std;
+
+pub main():
+	return std.out(&amp;#34;Hello, World!&amp;#34;);
+;
+&lt;/code>&lt;/pre>&lt;pre tabindex="0">&lt;code>Hello, World!
+&lt;/code>&lt;/pre>&lt;h1 id="핵심-내용">
+ 핵심 내용
+ &lt;a class="anchor" href="#%ed%95%b5%ec%8b%ac-%eb%82%b4%ec%9a%a9">#&lt;/a>
+&lt;/h1>
+&lt;pre tabindex="0">&lt;code>int4 a: 10; // 4바이트 정수에 숫자 10 할당
+&lt;/code>&lt;/pre>&lt;h2 id="구조체">
+ 구조체
+ &lt;a class="anchor" href="#%ea%b5%ac%ec%a1%b0%ec%b2%b4">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>pub Person{}:
+	str name: &amp;#34;이름&amp;#34;;
+	str phone: &amp;#34;010-1234-5678&amp;#34;
+	str email: &amp;#34;example@example.com&amp;#34;
+
+	(name, phone, email): (.name, .phone, .email);
+;
+&lt;/code>&lt;/pre>&lt;h2 id="변수">
+ 변수
+ &lt;a class="anchor" href="#%eb%b3%80%ec%88%98">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>i4 int: 10; // 4바이트 정수에 숫자 10 할당
+
+f8 float: 0.1234 // 8바이트 부동소수
+
+s string: &amp;#34;test&amp;#34; // 문자열
+
+a[6] array: [0, 1, 2, 3, 4, 5] // 배열
+&lt;/code>&lt;/pre>&lt;h2 id="함수">
+ 함수
+ &lt;a class="anchor" href="#%ed%95%a8%ec%88%98">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>exam():
+	return 10;
+;
+
+exam2(i4 a, i4 b):
+	i4 c: a + b;
+	return c;
+;
+&lt;/code>&lt;/pre>&lt;h2 id="기본-라이브러리">
+ 기본 라이브러리
+ &lt;a class="anchor" href="#%ea%b8%b0%eb%b3%b8-%eb%9d%bc%ec%9d%b4%eb%b8%8c%eb%9f%ac%eb%a6%ac">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="map">
+ Map
+ &lt;a class="anchor" href="#map">#&lt;/a>
+&lt;/h3>
+&lt;pre tabindex="0">&lt;code>std: lib.std;
+map: std.map;
+
+func main:
+	map m;
+	m: &amp;#34;key1&amp;#34;: &amp;#34;value1&amp;#34;, &amp;#34;key2&amp;#34;: &amp;#34;value2&amp;#34;;
+;
+&lt;/code>&lt;/pre>&lt;pre tabindex="0">&lt;code>map m;
+
+m.key: &amp;#34;name&amp;#34;; // {&amp;#34;name&amp;#34;:&amp;#34;&amp;#34;}
+m.value: &amp;#34;smith&amp;#34;; // {&amp;#34;name&amp;#34;:&amp;#34;smith&amp;#34;}
+&lt;/code>&lt;/pre>&lt;h3 id="set">
+ Set
+ &lt;a class="anchor" href="#set">#&lt;/a>
+&lt;/h3>
+&lt;pre tabindex="0">&lt;code>std: lib.std;
+set: std.set;
+
+func main:
+	set s;
+	s: &amp;#34;1&amp;#34;, &amp;#34;2&amp;#34;, &amp;#34;3&amp;#34;;
+;
+&lt;/code>&lt;/pre>&lt;h3 id="list">
+ List
+ &lt;a class="anchor" href="#list">#&lt;/a>
+&lt;/h3>
+&lt;pre tabindex="0">&lt;code>std: lib.std;
+list: std.list;
+
+func main:
+	list l;
+	l: &amp;#34;a&amp;#34;, &amp;#34;b&amp;#34;, &amp;#34;c&amp;#34;;
+;
+&lt;/code>&lt;/pre>&lt;h2 id="형변환">
+ 형변환
+ &lt;a class="anchor" href="#%ed%98%95%eb%b3%80%ed%99%98">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>to: lib.std.to;
+
+to.int(&amp;#39;10&amp;#39;); // &amp;#39;10&amp;#39; -&amp;gt; 10
+to.str(10); // 10 -&amp;gt; &amp;#39;10&amp;#39;
+&lt;/code>&lt;/pre>&lt;h2 id="반환-타입">
+ 반환 타입
+ &lt;a class="anchor" href="#%eb%b0%98%ed%99%98-%ed%83%80%ec%9e%85">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>func test(int a, int b) int:
+	return a + b;
+;
+&lt;/code>&lt;/pre>&lt;h3 id="함수-선언-형식">
+ 함수 선언 형식
+ &lt;a class="anchor" href="#%ed%95%a8%ec%88%98-%ec%84%a0%ec%96%b8-%ed%98%95%ec%8b%9d">#&lt;/a>
+&lt;/h3>
+&lt;pre tabindex="0">&lt;code>hello() void:
+    print(&amp;#34;Hello, World!&amp;#34;);
+;
+&lt;/code>&lt;/pre></description></item><item><title>문자대치</title><link>http://localhost:1313/docs/book/terminal/vim/%EB%AC%B8%EC%9E%90%EB%8C%80%EC%B9%98/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/vim/%EB%AC%B8%EC%9E%90%EB%8C%80%EC%B9%98/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>:%s/&lt;span style="color:#f92672">[&lt;/span>from&lt;span style="color:#f92672">]&lt;/span>/&lt;span style="color:#f92672">[&lt;/span>to&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>문제 1 - 추가</title><link>http://localhost:1313/docs/book/ai/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C/%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/ai/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C/%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-js" data-lang="js">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">&amp;#39;Book/Programming/CSS/gradient image.md &amp;#34;Book/Programming/Database/SQL/Prisma/\354\202\254\354\232\251 \353\260\251\353\262\225.md&amp;#34; .github/workflows/blank.yml .github/workflows/delete-files.js .github/workflows/upsert-files.js Book/.obsidian/plugins/frontmatter-modified-date/data.json Book/.obsidian/workspace.json &amp;#34;Book/2024/9/\353\223\234\353\224\224\354\226\264! Obsidian \353\270\224\353\241\234\352\267\270\354\235\230 \354\262\253\352\270\200\354\235\204 \354\223\260\352\262\214 \353\220\220\353\224\260!.md&amp;#34; &amp;#34;Book/2024/9/\353\247\245 \352\270\260\353\263\270 \354\225\204\354\235\264\354\275\230\354\235\264 \353\263\200\352\262\275\353\220\230\354\226\264\354\204\234....md&amp;#34; &amp;#34;Book/2024/9/\354\211\274\355\221\234\352\260\200 \355\217\254\355\225\250\353\220\234 \355\214\214\354\235\274 \354\235\264\353\246\204\354\235\204 \354\240\200\354\236\245\355\225\230\352\263\240 \353\266\210\353\237\254\354\230\254 \354\210\230 \354\236\210\352\262\214 \355\225\250.md&amp;#34; &amp;#34;Book/2024/9/\354\231\204\354\204\261! supabase\354\231\200 github \354\227\260\353\217\231\355\225\230\352\270\260.md&amp;#34; &amp;#34;Book/2024/9/\355\234\264 \353\223\234\353\224\224\354\226\264....md&amp;#34; &amp;#34;Book/AI/AI\352\260\200 \354\226\264\353\240\244\354\233\214\355\225\230\353\212\224 \353\254\270\354\240\234/\353\254\270\354\240\234 1.md&amp;#34; &amp;#34;Book/AI/AI\352\260\200 \354\226\264\353\240\244\354\233\214\355\225\230\353\212\224 \353\254\270\354\240\234/\353\254\270\354\240\234 2.md&amp;#34; &amp;#34;Book/AI/AI\352\260\200 \354\226\264\353\240\244\354\233\214\355\225\230\353\212\224 \353\254\270\354\240\234/\353\254\270\354\240\234 3.md&amp;#34; &amp;#34;Book/AI/AI\352\260\200 \354\226\264\353\240\244\354\233\214\355\225\230\353\212\224 \353\254\270\354\240\234/\353\254\270\354\240\234 4.md&amp;#34; &amp;#34;Book/Programming/AWS/AWS \354\227\260\352\262\260\355\225\230\353\212\224 \353\262\225.md&amp;#34; &amp;#34;Book/Programming/AWS/\354\240\200\354\236\245\352\263\265\352\260\204 \353\212\230\353\246\254\352\270\260.md&amp;#34; Book/Programming/CSS/BEM.md &amp;#34;Book/Programming/CSS/Color \354\241\260\355\225\251.md&amp;#34; Book/Programming/CSS/Table.md &amp;#34;Book/Programming/Color/RGB/4\353\266\200\355\204\260 256\352\271\214\354\247\200.md&amp;#34; Book/Programming/Font/Font Size.md &amp;#34;Book/Programming/Git/lfs \354\202\254\354\232\251\353\262\225.md&amp;#34; &amp;#34;Book/Programming/Git/\352\260\225\354\240\234 \353\263\221\355\225\251.md&amp;#34; &amp;#34;Book/Programming/Git/\353\250\270\354\247\200 \354\267\250\354\206\214.md&amp;#34; &amp;#34;Book/Programming/Git/\354\273\244\353\260\213 \353\251\224\354\204\270\354\247\200.md&amp;#34; &amp;#34;Book/Programming/Github/add\354\231\200 commit.md&amp;#34; &amp;#34;Book/Programming/Github/username password \354\240\200\354\236\245.md&amp;#34; &amp;#34;Book/Programming/Github/\352\260\225\354\240\234 \353\263\221\355\225\251.md&amp;#34; &amp;#34;Book/Programming/Github/\353\263\200\352\262\275\354\202\254\355\225\255 \355\231\225\354\235\270 (git status).md&amp;#34; &amp;#34;Book/Programming/Github/\353\263\200\352\262\275\354\202\254\355\225\255\354\235\204 \353\213\244\353\245\270 \353\270\214\353\240\214\354\271\230\354\227\220\354\204\234 \354\240\201\354\232\251\355\225\230\352\270\260.md&amp;#34; &amp;#34;Book/Programming/Github/\353\270\214\353\240\214\354\271\230 \354\202\255\354\240\234.md&amp;#34; &amp;#34;Book/Programming/Github/\354\265\234\354\213\240 \354\273\244\353\260\213 \354\240\234\352\261\260.md&amp;#34; &amp;#34;Book/Programming/Github/\354\265\234\354\213\240\354\202\254\355\225\255 pull \355\225\230\352\270\260.md&amp;#34; &amp;#34;Book/Programming/Github/\354\273\244\353\260\213 \354\264\210\352\270\260 \354\203\201\355\203\234\353\241\234 \353\220\230\353\217\214\353\246\254\352\270\260.md&amp;#34; &amp;#34;Book/Programming/NextJS/\352\265\254\354\241\260.md&amp;#34; &amp;#34;Book/Programming/NextJS/\353\260\260\355\217\254(bun).md&amp;#34; &amp;#34;Book/Programming/NextJS/\353\260\260\355\217\254(npm).md&amp;#34; &amp;#34;Book/Programming/NextJS/\354\204\244\354\271\230.md&amp;#34; &amp;#34;Book/Programming/NextJS/\354\213\234\354\236\221.md&amp;#34; &amp;#34;Book/Programming/NextJS/\354\230\244\353\245\230/failed WebSocket is closed due to suspension..md&amp;#34; &amp;#34;Book/Programming/NextJS/\355\224\204\353\241\234\354\240\235\355\212\270/MTC Co.,Ltd..md&amp;#34; &amp;#34;Book/Programming/NextJS/\355\224\204\353\241\234\354\240\235\355\212\270/\353\213\244\353\243\250\355\225\234\354\235\230 \353\270\224\353\241\234\352\267\270.md&amp;#34; &amp;#34;Book/Programming/Oracle/Oracle \354\227\260\352\262\260.md&amp;#34; Book/Programming/SSL/Certbot.md &amp;#34;Book/Programming/SSL/Letsencrypt \354\236\220\353\217\231\352\260\261\354\213\240.md&amp;#34; &amp;#34;Book/Programming/SSL/SSL \354\235\270\354\246\235 \353\260\233\352\270\260.md&amp;#34; &amp;#34;Book/Programming/Terminal/PID \354\243\275\354\235\264\352\270\260.md&amp;#34; &amp;#34;Book/Programming/Terminal/Tmux/\354\202\254\354\232\251 \353\260\251\353\262\225.md&amp;#34; &amp;#34;Book/Programming/Terminal/Vim/Iterm2/zshrc \354\204\244\354\240\225.md&amp;#34; &amp;#34;Book/Programming/Terminal/Vim/\353\254\270\354\236\220 \353\214\200\354\271\230.md&amp;#34; &amp;#34;Book/Programming/Terminal/Vim/\354\244\204 \354\235\264\353\217\231.md&amp;#34; &amp;#34;Book/Programming/Terminal/Yabai/\354\213\244\355\226\211.md&amp;#34; &amp;#34;Book/Programming/Terminal/\352\266\214\355\225\234 \354\204\244\354\240\225.md&amp;#34; &amp;#34;Book/Programming/Ubuntu/\354\240\200\354\236\245\352\263\265\352\260\204 \355\231\225\354\235\270.md&amp;#34; Book/Programming/npm/pm2.md&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>사용 방법</title><link>http://localhost:1313/docs/book/sqlite/%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/sqlite/%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/</guid><description>&lt;h1 id="초기-설정">
+ 초기 설정
+ &lt;a class="anchor" href="#%ec%b4%88%ea%b8%b0-%ec%84%a4%ec%a0%95">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="설치">
+ 설치
+ &lt;a class="anchor" href="#%ec%84%a4%ec%b9%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>brew install sqlite3
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
+&lt;h2 id="실행">
+ 실행
+ &lt;a class="anchor" href="#%ec%8b%a4%ed%96%89">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>sqlite3 mydb.db
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;hr>
+&lt;h1 id="sqlite-shell-명령어">
+ SQLite Shell 명령어
+ &lt;a class="anchor" href="#sqlite-shell-%eb%aa%85%eb%a0%b9%ec%96%b4">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="tables">
+ .tables
+ &lt;a class="anchor" href="#tables">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>.tables person
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="schema">
+ .schema
+ &lt;a class="anchor" href="#schema">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>.&lt;span style="color:#66d9ef">schema&lt;/span> person
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="exit">
+ .exit
+ &lt;a class="anchor" href="#exit">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>.exit
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="backup">
+ .backup
+ &lt;a class="anchor" href="#backup">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>.backup main b_mydb.db
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h1 id="sql">
+ SQL
+ &lt;a class="anchor" href="#sql">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="ddl-data-definition-language-데이터-정의-언어">
+ DDL (Data Definition Language: 데이터 정의 언어)
+ &lt;a class="anchor" href="#ddl-data-definition-language-%eb%8d%b0%ec%9d%b4%ed%84%b0-%ec%a0%95%ec%9d%98-%ec%96%b8%ec%96%b4">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="table">
+ TABLE
+ &lt;a class="anchor" href="#table">#&lt;/a>
+&lt;/h3>
+&lt;h4 id="create-table">
+ CREATE TABLE
+ &lt;a class="anchor" href="#create-table">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">CREATE&lt;/span> &lt;span style="color:#66d9ef">TABLE&lt;/span> person (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	id INTEGER &lt;span style="color:#66d9ef">NOT&lt;/span> &lt;span style="color:#66d9ef">NULL&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	name TEXT &lt;span style="color:#66d9ef">NOT&lt;/span> &lt;span style="color:#66d9ef">NULL&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	age INTEGER,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">PRIMARY&lt;/span> &lt;span style="color:#66d9ef">KEY&lt;/span> (id AUTOINCREMENT)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>);
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="alter-table">
+ ALTER TABLE
+ &lt;a class="anchor" href="#alter-table">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">ALTER&lt;/span> &lt;span style="color:#66d9ef">TABLE&lt;/span> person &lt;span style="color:#66d9ef">ADD&lt;/span> &lt;span style="color:#66d9ef">COLUMN&lt;/span> salary INTEGER &lt;span style="color:#66d9ef">NOT&lt;/span> &lt;span style="color:#66d9ef">NULL&lt;/span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="drop-table">
+ DROP TABLE
+ &lt;a class="anchor" href="#drop-table">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">DROP&lt;/span> &lt;span style="color:#66d9ef">TABLE&lt;/span> person;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="view">
+ VIEW
+ &lt;a class="anchor" href="#view">#&lt;/a>
+&lt;/h3>
+&lt;h4 id="create-view">
+ CREATE VIEW
+ &lt;a class="anchor" href="#create-view">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">CREATE&lt;/span> &lt;span style="color:#66d9ef">VIEW&lt;/span> name_person &lt;span style="color:#66d9ef">AS&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> name &lt;span style="color:#66d9ef">FROM&lt;/span> person;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="drop-view">
+ DROP VIEW
+ &lt;a class="anchor" href="#drop-view">#&lt;/a>
+&lt;/h4>
+&lt;h3 id="index">
+ INDEX
+ &lt;a class="anchor" href="#index">#&lt;/a>
+&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>인덱스&lt;/strong>는 데이터를 빠르게 찾도록 도와주는 목차 같은 구조입니다.&lt;/li>
+&lt;li>&lt;strong>인덱스로 검색&lt;/strong>하면 전체 데이터를 다 보지 않고 원하는 데이터를 바로 찾아가기 때문에 훨씬 빠릅니다.&lt;/li>
+&lt;li>단, 인덱스는 검색은 빠르게 하지만 삽입/갱신 시 성능에 약간의 영향을 줄 수 있으니 꼭 필요한 컬럼에만 사용하는 게 좋아요.&lt;/li>
+&lt;/ul>
+&lt;h4 id="create-index">
+ CREATE INDEX
+ &lt;a class="anchor" href="#create-index">#&lt;/a>
+&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">CREATE&lt;/span> &lt;span style="color:#66d9ef">INDEX&lt;/span> index_person &lt;span style="color:#66d9ef">ON&lt;/span> person(name);
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="drop-index">
+ DROP INDEX
+ &lt;a class="anchor" href="#drop-index">#&lt;/a>
+&lt;/h4>
+&lt;h2 id="dml-data-manipulation-language-데이터-조작-언어">
+ DML (Data Manipulation Language: 데이터 조작 언어)
+ &lt;a class="anchor" href="#dml-data-manipulation-language-%eb%8d%b0%ec%9d%b4%ed%84%b0-%ec%a1%b0%ec%9e%91-%ec%96%b8%ec%96%b4">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="select">
+ SELECT
+ &lt;a class="anchor" href="#select">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="insert-into">
+ INSERT INTO
+ &lt;a class="anchor" href="#insert-into">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">INSERT&lt;/span> &lt;span style="color:#66d9ef">INTO&lt;/span> person (name, age) &lt;span style="color:#66d9ef">VALUES&lt;/span> (&lt;span style="color:#e6db74">&amp;#39;사원1&amp;#39;&lt;/span>, &lt;span style="color:#ae81ff">28&lt;/span>);
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="update">
+ UPDATE
+ &lt;a class="anchor" href="#update">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">UPDATE&lt;/span> person &lt;span style="color:#66d9ef">SET&lt;/span> name &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원2&amp;#39;&lt;/span> &lt;span style="color:#66d9ef">WHERE&lt;/span> name &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원1&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="delete">
+ DELETE
+ &lt;a class="anchor" href="#delete">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">DELETE&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="where">
+ WHERE
+ &lt;a class="anchor" href="#where">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person &lt;span style="color:#66d9ef">WHERE&lt;/span> name &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원1&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person &lt;span style="color:#66d9ef">WHERE&lt;/span> name &lt;span style="color:#66d9ef">IS&lt;/span> &lt;span style="color:#66d9ef">NOT&lt;/span> &lt;span style="color:#66d9ef">NULL&lt;/span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="order-by">
+ ORDER BY
+ &lt;a class="anchor" href="#order-by">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person &lt;span style="color:#66d9ef">ORDER&lt;/span> &lt;span style="color:#66d9ef">BY&lt;/span> age;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="desk">
+ DESK
+ &lt;a class="anchor" href="#desk">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person &lt;span style="color:#66d9ef">ORDER&lt;/span> &lt;span style="color:#66d9ef">BY&lt;/span> age &lt;span style="color:#66d9ef">DESC&lt;/span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="like">
+ LIKE
+ &lt;a class="anchor" href="#like">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person &lt;span style="color:#66d9ef">WHERE&lt;/span> name &lt;span style="color:#66d9ef">LIKE&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원%&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="as">
+ AS
+ &lt;a class="anchor" href="#as">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	id &lt;span style="color:#66d9ef">AS&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원 번호&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	name &lt;span style="color:#66d9ef">AS&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원 이름&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">FROM&lt;/span> person;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- | 사원 번호 | 사원 이름 |
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- | 1 | 사원1 |
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- | 2 | 사원2 |
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	id &lt;span style="color:#e6db74">&amp;#39;사원 번호&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	name &lt;span style="color:#e6db74">&amp;#39;사원 이름&amp;#39;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">FROM&lt;/span> person;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="case">
+ CASE
+ &lt;a class="anchor" href="#case">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> name, salary,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">CASE&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">WHEN&lt;/span> salary &lt;span style="color:#f92672">&amp;lt;&lt;/span> &lt;span style="color:#ae81ff">3000000&lt;/span> &lt;span style="color:#66d9ef">THEN&lt;/span> &lt;span style="color:#e6db74">&amp;#39;신입&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">WHEN&lt;/span> salary &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">3000000&lt;/span> &lt;span style="color:#66d9ef">AND&lt;/span> salary &lt;span style="color:#f92672">&amp;lt;&lt;/span> &lt;span style="color:#ae81ff">4000000&lt;/span> &lt;span style="color:#66d9ef">THEN&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">WHEN&lt;/span> salary &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">4000000&lt;/span> &lt;span style="color:#66d9ef">AND&lt;/span> salary &lt;span style="color:#f92672">&amp;lt;&lt;/span> &lt;span style="color:#ae81ff">5000000&lt;/span> &lt;span style="color:#66d9ef">THEN&lt;/span> &lt;span style="color:#e6db74">&amp;#39;대리&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">WHEN&lt;/span> salary &lt;span style="color:#f92672">&amp;gt;=&lt;/span> &lt;span style="color:#ae81ff">5000000&lt;/span> &lt;span style="color:#66d9ef">AND&lt;/span> salary &lt;span style="color:#f92672">&amp;lt;&lt;/span> &lt;span style="color:#ae81ff">7000000&lt;/span> &lt;span style="color:#66d9ef">THEN&lt;/span> &lt;span style="color:#e6db74">&amp;#39;과장&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">ELSE&lt;/span> &lt;span style="color:#e6db74">&amp;#39;임원&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">END&lt;/span> &lt;span style="color:#66d9ef">AS&lt;/span> &lt;span style="color:#66d9ef">position&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">FROM&lt;/span> person;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="round">
+ round()
+ &lt;a class="anchor" href="#round">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> round(&lt;span style="color:#ae81ff">12&lt;/span>.&lt;span style="color:#ae81ff">34567&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>) &lt;span style="color:#75715e">-- 12.34
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="substr">
+ substr()
+ &lt;a class="anchor" href="#substr">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> substr(&lt;span style="color:#e6db74">&amp;#39;abcdefg&amp;#39;&lt;/span>, &lt;span style="color:#ae81ff">2&lt;/span>); &lt;span style="color:#75715e">-- bcdefg
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">SELECT&lt;/span> substr(&lt;span style="color:#e6db74">&amp;#39;abcdefg&amp;#39;&lt;/span>, &lt;span style="color:#ae81ff">3&lt;/span>, &lt;span style="color:#ae81ff">4&lt;/span>); &lt;span style="color:#75715e">-- cdef
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="strftime">
+ strftime()
+ &lt;a class="anchor" href="#strftime">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">SELECT&lt;/span> strftime(&lt;span style="color:#e6db74">&amp;#39;%Y-%m-%d %H:%M:%S&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;now&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;localtime&amp;#39;&lt;/span>);
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="기타">
+ 기타
+ &lt;a class="anchor" href="#%ea%b8%b0%ed%83%80">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="pragma">
+ PRAGMA
+ &lt;a class="anchor" href="#pragma">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>PRAGMA table_info(person);
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="explain-query-plan">
+ EXPLAIN QUERY PLAN
+ &lt;a class="anchor" href="#explain-query-plan">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sql" data-lang="sql">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 이렇게 입력하면 SQLite가 어떻게 검색할지를 알려줘요.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">EXPLAIN&lt;/span> QUERY PLAN &lt;span style="color:#66d9ef">SELECT&lt;/span> &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#66d9ef">FROM&lt;/span> person &lt;span style="color:#66d9ef">WHERE&lt;/span> name &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;사원1&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>사용 방법</title><link>http://localhost:1313/docs/book/terminal/tmux/%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/tmux/%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>ctrl + b &lt;span style="color:#75715e"># 기본 명령어&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 생성&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>tmux &lt;span style="color:#75715e"># tmux 시작&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ctrl + b c &lt;span style="color:#75715e"># 새로운 패널 생성&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ctrl + b % &lt;span style="color:#75715e"># 창 가로 분할&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ctrl + b &lt;span style="color:#e6db74">&amp;#34; # 창 세로 분할
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74"># 변경
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + b &lt;/span>$&lt;span style="color:#e6db74"> # 세션 이름 변경
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + b , # 창 이름 변경
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + b (방향키) # 창 위치 변경
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74"># 보기
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + b s # 전체 세션 목록
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + b w # 전체 창 목록
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74"># 끄기
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">tmux kill-session -t 0 # 0번 세션 종료
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + d # 패널, 세션 닫기
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">ctrl + b &amp;amp; # 창 닫기
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>사용 방법</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/sql/prisma/%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/sql/prisma/%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>npx prisma migrate dev
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>사용법</title><link>http://localhost:1313/docs/book/terminal/lazygit/%EC%82%AC%EC%9A%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/lazygit/%EC%82%AC%EC%9A%A9%EB%B2%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&amp;lt;space&amp;gt; &lt;span style="color:#75715e"># Add&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>s &lt;span style="color:#75715e"># Stash&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>a &lt;span style="color:#75715e"># Stash all&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>c &lt;span style="color:#75715e"># Commit&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>P &lt;span style="color:#75715e"># Push&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>p &lt;span style="color:#75715e"># Pull&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f &lt;span style="color:#75715e"># Fetch&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>D &lt;span style="color:#75715e"># Reset&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>R &lt;span style="color:#75715e"># Rename branch&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>사용법</title><link>http://localhost:1313/docs/book/terminal/neovim/%EC%82%AC%EC%9A%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/neovim/%EC%82%AC%EC%9A%A9%EB%B2%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>shift + v &lt;span style="color:#75715e"># 블럭 지정&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">&amp;#39;&amp;lt;,&amp;#39;&lt;/span>&amp;gt;norm i# &lt;span style="color:#75715e"># 주석 처리&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#e6db74">&amp;#39;&amp;lt;,&amp;#39;&lt;/span>&amp;gt;norm 1x &lt;span style="color:#75715e"># 주석 삭제&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>:sp &lt;span style="color:#75715e"># 가로로 창 분할&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>:vs &lt;span style="color:#75715e"># 세로로 창 분할&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>:close &lt;span style="color:#75715e"># 창 닫기&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>:term &lt;span style="color:#75715e"># 터미널 창 열기&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>:vimgrep 
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>사용법</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/cc++/xmake/%EC%82%AC%EC%9A%A9%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/cc++/xmake/%EC%82%AC%EC%9A%A9%EB%B2%95/</guid><description>&lt;h3 id="-xmake-rust의-cargo-같은-c-빌드-시스템-사용법">
+ 🚀 &lt;strong>XMake: Rust의 Cargo 같은 C 빌드 시스템 사용법&lt;/strong>
+ &lt;a class="anchor" href="#-xmake-rust%ec%9d%98-cargo-%ea%b0%99%ec%9d%80-c-%eb%b9%8c%eb%93%9c-%ec%8b%9c%ec%8a%a4%ed%85%9c-%ec%82%ac%ec%9a%a9%eb%b2%95">#&lt;/a>
+&lt;/h3>
+&lt;p>XMake는 &lt;strong>C, C++ 프로젝트에서 Cargo처럼 간편한 빌드 + 실행 + 패키지 관리&lt;/strong>를 제공합니다.&lt;br>
+Rust에서 &lt;code>cargo build&lt;/code>, &lt;code>cargo run&lt;/code>을 쓰듯이, XMake에서는 &lt;code>xmake&lt;/code>, &lt;code>xmake run&lt;/code>을 사용할 수 있습니다.&lt;/p>
+&lt;hr>
+&lt;h2 id="1-xmake-설치">
+ &lt;strong>1️⃣ XMake 설치&lt;/strong>
+ &lt;a class="anchor" href="#1-xmake-%ec%84%a4%ec%b9%98">#&lt;/a>
+&lt;/h2>
+&lt;p>📌 &lt;strong>Linux/macOS&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-sh" data-lang="sh">&lt;span style="display:flex;">&lt;span>curl -fsSL https://xmake.io/shget.text | bash
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>📌 &lt;strong>Windows&lt;/strong>&lt;br>
+PowerShell에서 실행:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-powershell" data-lang="powershell">&lt;span style="display:flex;">&lt;span>iwr -useb https&lt;span style="color:#960050;background-color:#1e0010">:&lt;/span>//xmake.io/psget.text | iex
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>📌 &lt;strong>또는 패키지 매니저 사용&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>macOS: &lt;code>brew install xmake&lt;/code>&lt;/li>
+&lt;li>Linux: &lt;code>sudo apt install xmake&lt;/code> (Ubuntu), &lt;code>sudo pacman -S xmake&lt;/code> (Arch)&lt;/li>
+&lt;li>Windows: &lt;code>scoop install xmake&lt;/code> 또는 &lt;code>choco install xmake&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>설치 확인:&lt;/p></description></item><item><title>색상</title><link>http://localhost:1313/docs/book/uiux/%EC%83%89%EC%83%81/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/uiux/%EC%83%89%EC%83%81/</guid><description>&lt;p>&lt;img src="%ec%83%89%ec%83%81.png" alt="색상" />&lt;/p></description></item><item><title>설정</title><link>http://localhost:1313/docs/book/%ED%8C%A8%ED%82%A4%EC%A7%80-%EA%B4%80%EB%A6%AC%EC%9E%90/choco/%EC%84%A4%EC%B9%98/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%8C%A8%ED%82%A4%EC%A7%80-%EA%B4%80%EB%A6%AC%EC%9E%90/choco/%EC%84%A4%EC%B9%98/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Powershell&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Set-ExecutionPolicy Bypass -Scope Process -Force; &lt;span style="color:#f92672">[&lt;/span>System.Net.ServicePointManager&lt;span style="color:#f92672">]&lt;/span>::SecurityProtocol &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#f92672">[&lt;/span>System.Net.ServicePointManager&lt;span style="color:#f92672">]&lt;/span>::SecurityProtocol -bor 3072; iex &lt;span style="color:#f92672">((&lt;/span>New-Object System.Net.WebClient&lt;span style="color:#f92672">)&lt;/span>.DownloadString&lt;span style="color:#f92672">(&lt;/span>&lt;span style="color:#e6db74">&amp;#39;https://community.chocolatey.org/install.ps1&amp;#39;&lt;/span>&lt;span style="color:#f92672">))&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>설치</title><link>http://localhost:1313/docs/book/text-editor/zed/%EC%84%A4%EC%B9%98/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/text-editor/zed/%EC%84%A4%EC%B9%98/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 설치&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>https://scoop.sh/#/apps?q&lt;span style="color:#f92672">=&lt;/span>zed-nightly
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 업데이트&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>scoop update zed-nightly
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>실행</title><link>http://localhost:1313/docs/book/terminal/yabai/%EC%8B%A4%ED%96%89/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/terminal/yabai/%EC%8B%A4%ED%96%89/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-zsh" data-lang="zsh">&lt;span style="display:flex;">&lt;span>yabai --start-service
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>yabai --restart-service
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>언어 설정</title><link>http://localhost:1313/docs/book/text-editor/helix/%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/text-editor/helix/%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/</guid><description>&lt;h2 id="go">
+ Go
+ &lt;a class="anchor" href="#go">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>brew install gopls
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Go&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">language-server&lt;/span>.&lt;span style="color:#a6e22e">gopls&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">command&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;gopls&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">args&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;serve&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[[&lt;span style="color:#a6e22e">language&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">name&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;go&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">scope&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;source.go&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">file-types&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;go&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">language-servers&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;gopls&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">formatter&lt;/span> = { &lt;span style="color:#a6e22e">command&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;goimports&amp;#34;&lt;/span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">auto-format&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="rust">
+ Rust
+ &lt;a class="anchor" href="#rust">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>brew install llvm
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-shell" data-lang="shell">&lt;span style="display:flex;">&lt;span>echo &lt;span style="color:#e6db74">&amp;#39;export PATH=&amp;#34;$(brew --prefix llvm)/bin:$PATH&amp;#34;&amp;#39;&lt;/span> &amp;gt;&amp;gt; ~/.zshrc
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>source ~/.zshrc
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># ~/.config/helix/languages.toml&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Rust&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>[[&lt;span style="color:#a6e22e">language&lt;/span>]]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">name&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;rust&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">scope&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;source.rust&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">file-types&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;rs&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">language-servers&lt;/span> = [&lt;span style="color:#e6db74">&amp;#34;rust-analyzer&amp;#34;&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">formatter&lt;/span> = { &lt;span style="color:#a6e22e">command&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;rustfmt&amp;#34;&lt;/span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">auto-format&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>이미지 넣는법</title><link>http://localhost:1313/docs/book/markdown/%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/markdown/%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-markdown" data-lang="markdown">&lt;span style="display:flex;">&lt;span>![&lt;span style="color:#f92672">bears&lt;/span>](&lt;span style="color:#a6e22e">http://placebear.com/200/200&lt;/span>)
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>결과&lt;/p>
+&lt;p>&lt;img src="http://placebear.com/200/200" alt="bears" />&lt;/p></description></item><item><title>자격증 목록</title><link>http://localhost:1313/docs/book/%EC%9E%90%EA%B2%A9%EC%A6%9D/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%EC%9E%90%EA%B2%A9%EC%A6%9D/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/</guid><description>&lt;p>** 추천 **
+정보처리기사
+SQLD
+OCJP
+리눅스마스터 2급
+PC정비사 2급&lt;/p>
+&lt;p>&lt;strong>국내 IT 자격증 정리표&lt;/strong>&lt;/p>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>&lt;strong>분야&lt;/strong>&lt;/th>
+ &lt;th>&lt;strong>자격증명&lt;/strong>&lt;/th>
+ &lt;th>&lt;strong>설명&lt;/strong>&lt;/th>
+ &lt;th>&lt;strong>주요 학습 내용&lt;/strong>&lt;/th>
+ &lt;th>&lt;strong>학습 방법&lt;/strong>&lt;/th>
+ &lt;th>&lt;strong>실무 활용성&lt;/strong>&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;strong>소프트웨어 개발&lt;/strong>&lt;/td>
+ &lt;td>정보처리기사&lt;/td>
+ &lt;td>IT 전반의 기본 개념과 실무 능력을 평가&lt;/td>
+ &lt;td>데이터베이스, 네트워크, 알고리즘, 소프트웨어 공학&lt;/td>
+ &lt;td>기출 문제 풀이, 개념 정리, 실습 프로젝트&lt;/td>
+ &lt;td>SI 개발자 필수, IT 기업 취업 시 우대&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>소프트웨어 개발&lt;/strong>&lt;/td>
+ &lt;td>정보처리산업기사&lt;/td>
+ &lt;td>정보처리기사보다 난이도가 낮고 실무 중심&lt;/td>
+ &lt;td>프로그래밍, 데이터베이스, 시스템 분석&lt;/td>
+ &lt;td>기출 문제 풀이, 실무 프로젝트 진행&lt;/td>
+ &lt;td>중소기업 IT 개발자, 공공기관 취업 시 가산점&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>데이터베이스&lt;/strong>&lt;/td>
+ &lt;td>SQLD (SQL Developer)&lt;/td>
+ &lt;td>SQL 기본 개념 및 데이터 분석 능력을 검증&lt;/td>
+ &lt;td>SQL 기본 문법, 조인, 인덱스, 서브쿼리&lt;/td>
+ &lt;td>SQL 문제 풀이, 데이터베이스 실습&lt;/td>
+ &lt;td>데이터 분석, 백엔드 개발, DB 최적화&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>데이터베이스&lt;/strong>&lt;/td>
+ &lt;td>SQLP (SQL Professional)&lt;/td>
+ &lt;td>SQLD보다 심화된 DB 설계 및 최적화 과정&lt;/td>
+ &lt;td>대용량 데이터 처리, 실행 계획 분석, 튜닝 기법&lt;/td>
+ &lt;td>SQL 최적화 연습, 인덱스 및 성능 튜닝 학습&lt;/td>
+ &lt;td>데이터베이스 관리자(DBA), 데이터 엔지니어&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>데이터 분석&lt;/strong>&lt;/td>
+ &lt;td>빅데이터분석기사&lt;/td>
+ &lt;td>빅데이터 처리 및 분석 능력을 검증&lt;/td>
+ &lt;td>데이터 수집, 정제, 분석, 시각화 기법&lt;/td>
+ &lt;td>데이터 분석 프로젝트 진행, Python 및 R 활용&lt;/td>
+ &lt;td>데이터 사이언스, 머신러닝, AI&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>데이터 분석&lt;/strong>&lt;/td>
+ &lt;td>ADsP (데이터분석 준전문가)&lt;/td>
+ &lt;td>데이터 분석 기초 개념 및 활용 능력 평가&lt;/td>
+ &lt;td>데이터 통계, 분석 기법, 머신러닝 개요&lt;/td>
+ &lt;td>기출 문제 풀이, Python 데이터 분석 실습&lt;/td>
+ &lt;td>데이터 분석 입문, 마케팅, 기획&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>데이터 분석&lt;/strong>&lt;/td>
+ &lt;td>ADP (데이터분석 전문가)&lt;/td>
+ &lt;td>ADsP 상위 단계, 빅데이터 및 고급 분석 기법&lt;/td>
+ &lt;td>통계, 머신러닝, 데이터 마이닝, 딥러닝&lt;/td>
+ &lt;td>Python, R 활용 프로젝트, 알고리즘 연습&lt;/td>
+ &lt;td>데이터 사이언스, 금융권, 연구소&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>네트워크&lt;/strong>&lt;/td>
+ &lt;td>네트워크관리사 2급&lt;/td>
+ &lt;td>네트워크 기초 개념 및 실무 적용 능력 평가&lt;/td>
+ &lt;td>TCP/IP, 라우팅, 방화벽 설정, 무선 네트워크&lt;/td>
+ &lt;td>Packet Tracer 실습, 네트워크 구축 연습&lt;/td>
+ &lt;td>네트워크 관리자, 보안 엔지니어&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>네트워크&lt;/strong>&lt;/td>
+ &lt;td>네트워크관리사 1급&lt;/td>
+ &lt;td>네트워크관리사 2급 상위 자격증, 고급 네트워크 기술 평가&lt;/td>
+ &lt;td>고급 라우팅, 네트워크 보안, 트래픽 관리&lt;/td>
+ &lt;td>실무 네트워크 환경 구성, 보안 테스트 실습&lt;/td>
+ &lt;td>IT 인프라 관리자, 네트워크 엔지니어&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>보안&lt;/strong>&lt;/td>
+ &lt;td>정보보안기사&lt;/td>
+ &lt;td>국내 보안 전문가 인증 자격증&lt;/td>
+ &lt;td>네트워크 보안, 암호화, 해킹 및 방어 기법&lt;/td>
+ &lt;td>보안 이론 학습, 모의 해킹 실습&lt;/td>
+ &lt;td>보안 엔지니어, 침해 대응 전문가&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>보안&lt;/strong>&lt;/td>
+ &lt;td>정보보안산업기사&lt;/td>
+ &lt;td>정보보안기사보다 낮은 난이도, 실무 중심&lt;/td>
+ &lt;td>보안 위협 분석, 시스템 보안, 네트워크 보안&lt;/td>
+ &lt;td>보안 실습, 기본 해킹 및 대응 기법 학습&lt;/td>
+ &lt;td>보안 관련 기업 취업, 보안 운영 관리&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>운영체제&lt;/strong>&lt;/td>
+ &lt;td>리눅스마스터 2급&lt;/td>
+ &lt;td>리눅스 운영체제 기초 및 시스템 관리&lt;/td>
+ &lt;td>리눅스 명령어, 파일 시스템, 사용자 관리&lt;/td>
+ &lt;td>가상 환경에서 리눅스 실습, 기출 문제 풀이&lt;/td>
+ &lt;td>서버 관리자, 시스템 엔지니어&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;strong>운영체제&lt;/strong>&lt;/td>
+ &lt;td>리눅스마스터 1급&lt;/td>
+ &lt;td>리눅스 서버 운영 및 보안 관리&lt;/td>
+ &lt;td>네트워크 설정, 서버 구축, 방화벽 설정&lt;/td>
+ &lt;td>리눅스 서버 구축 실습, 네트워크 관리 학습&lt;/td>
+ &lt;td>리눅스 기반 시스템 관리자, 클라우드 엔지니어&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>국제 IT 자격증 정리표&lt;/strong>&lt;/p></description></item><item><title>초기 세팅</title><link>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/css/%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-css" data-lang="css">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">*,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">*&lt;/span>::&lt;span style="color:#a6e22e">before&lt;/span>&lt;span style="color:#f92672">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">*&lt;/span>::&lt;span style="color:#a6e22e">after&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">margin&lt;/span>: &lt;span style="color:#ae81ff">0&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">padding&lt;/span>: &lt;span style="color:#ae81ff">0&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">box-sizing&lt;/span>: &lt;span style="color:#66d9ef">border-box&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">body&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">font-family&lt;/span>: &lt;span style="color:#e6db74">&amp;#39;Apple SD Gothic Neo&amp;#39;&lt;/span>, &lt;span style="color:#e6db74">&amp;#39;Noto Sans KR&amp;#39;&lt;/span>, &lt;span style="color:#66d9ef">sans-serif&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">button&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">background&lt;/span>: &lt;span style="color:#66d9ef">none&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">color&lt;/span>: &lt;span style="color:#66d9ef">inherit&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">border&lt;/span>: &lt;span style="color:#66d9ef">none&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">cursor&lt;/span>: &lt;span style="color:#66d9ef">pointer&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">outline&lt;/span>: &lt;span style="color:#66d9ef">inherit&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">a&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">color&lt;/span>: &lt;span style="color:#66d9ef">inherit&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">text-decoration&lt;/span>: &lt;span style="color:#66d9ef">none&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">li&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">list-style&lt;/span>: &lt;span style="color:#66d9ef">none&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">input&lt;/span>:&lt;span style="color:#a6e22e">focus&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">outline&lt;/span>: &lt;span style="color:#66d9ef">none&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item></channel></rss>

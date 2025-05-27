@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="ko-kr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="네, MQTT Publisher, Broker, Subscriber, 그리고 API Server를 연동하는 전체적인 예제를 보여드리겠습니다.
+이 예제는 다음 구성 요소들을 포함합니다:
+
+MQTT Broker: Mosquitto (가장 대중적인 오픈소스 MQTT Broker)
+MQTT Publisher: Python 스크립트 (임베디드 장치 역할)
+MQTT Subscriber (API Server 연동 로직): Python 스크립트 (Broker에서 메시지를 받아 API Server로 전달)
+API Server: Go Gin 프레임워크 (이전 예제에서 사용한 API 서버)
+
+
+  1단계: Mosquitto MQTT Broker 설치 및 실행
+  #
+
+Mosquitto는 MQTT 연동을 위한 필수 요소입니다.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://baboyiban.github.io/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/">
+  <meta property="og:site_name" content="choidaruhan">
+  <meta property="og:title" content="choidaruhan">
+  <meta property="og:description" content="네, MQTT Publisher, Broker, Subscriber, 그리고 API Server를 연동하는 전체적인 예제를 보여드리겠습니다.
+이 예제는 다음 구성 요소들을 포함합니다:
+MQTT Broker: Mosquitto (가장 대중적인 오픈소스 MQTT Broker) MQTT Publisher: Python 스크립트 (임베디드 장치 역할) MQTT Subscriber (API Server 연동 로직): Python 스크립트 (Broker에서 메시지를 받아 API Server로 전달) API Server: Go Gin 프레임워크 (이전 예제에서 사용한 API 서버) 1단계: Mosquitto MQTT Broker 설치 및 실행 # Mosquitto는 MQTT 연동을 위한 필수 요소입니다.">
+  <meta property="og:locale" content="ko_kr">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+<title>프로젝트 Kosta 2 | choidaruhan</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="https://baboyiban.github.io/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/">
+<link rel="stylesheet" href="/book.min.26ab4dc3f6076ceda2f9c263aa4029ae3341dbcce339f901aa432b11da6e5894.css" integrity="sha256-JqtNw/YHbO2i&#43;cJjqkAprjNB28zjOfkBqkMrEdpuWJQ=" crossorigin="anonymous">
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.8c12f9cfc0df3309935b6ba1f5b8c31d6b4b302d064ef56974b471b04abdabca.js" integrity="sha256-jBL5z8DfMwmTW2uh9bjDHWtLMC0GTvVpdLRxsEq9q8o=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>choidaruhan</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/" class="">Ai가 어려워하는 문제 1 추가</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1/" class="">Ai가 어려워하는 문제 1</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-2/" class="">Ai가 어려워하는 문제 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-3/" class="">Ai가 어려워하는 문제 3</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-4/" class="">Ai가 어려워하는 문제 4</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/" class="">Aws 연결하는 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/c-init.bat/" class="">C Init.bat</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/class-%EC%9D%B4%EB%A6%84-bem/" class="">Class 이름 Bem</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/" class="">Conan으로 C언어 프로젝트 디버그, 컴파일, 실행하는 방법 요약</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-color-%EC%A1%B0%ED%95%A9/" class="">Css Color 조합</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-gradient-image/" class="">Css Gradient Image</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-table/" class="">Css Table</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/" class="">Css 초기 세팅</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/docker-%EC%82%AD%EC%A0%9C-%EB%AA%85%EB%A0%B9%EC%96%B4/" class="">Docker 삭제 명령어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/font-size/" class="">Font Size</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ghostty---config/" class="">Ghostty Config</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/git-add%EC%99%80-commit/" class="">Git Add와 Commit</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/git-username-password-%EC%A0%80%EC%9E%A5/" class="">Git Username Password 저장</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/helix-editor---config.toml/" class="">Helix Editor Config.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/helix-editor---languages.toml/" class="">Helix Editor Languages.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/helix-editor-%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/" class="">Helix Editor 언어 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/" class="">Mqtt 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어?</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-plugin---colorscheme.lua/" class="">Neo Vim Plugin Colorscheme.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-plugin---oil.lua/" class="">Neo Vim Plugin Oil.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-plugin---telescope.lua/" class="">Neo Vim Plugin Telescope.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nextjs---failed-websocket-is-closed-due-to-suspension./" class="">Nextjs Failed Web Socket Is Closed Due to Suspension.</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nextjs-%EA%B5%AC%EC%A1%B0/" class="">Nextjs 구조</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nginx---ssl-%EC%9D%B8%EC%A6%9D-%EB%B0%9B%EA%B8%B0/" class="">Nginx Ssl 인증 받기</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/prisma-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">Prisma 사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/qwen-2.5-coder/" class="">Qwen 2.5 Coder</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/react-flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/" class="">React Flux 패턴 간단 예제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ubuntu-%EC%84%A4%EC%A0%95/" class="">Ubuntu 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ubuntu-%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/" class="">Ubuntu 저장 공간 확인</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ubuntu-%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/" class="">Ubuntu 한글 깨짐 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/uiux-%EC%83%89%EC%83%81/" class="">Uiux 색상</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/windows-%EC%84%A4%EC%B9%98-%EC%A4%91-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%97%B0%EA%B2%B0-%EB%AC%B8%EC%A0%9C/" class="">Windows 설치 중 네트워크 연결 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/xmake-%EC%82%AC%EC%9A%A9%EB%B2%95/" class="">Xmake 사용법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/zed-editor-windows%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Zed Editor Windows에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/zshrc-%EC%84%A4%EC%A0%95/" class="">Zshrc 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/" class="">나만의 프로그래밍 언어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EB%B0%9C%EB%8F%84%EB%A5%B4%ED%94%84-%EA%B5%90%EC%9C%A1/" class="">발도르프 교육</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98/" class="">알고리즘</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-blog/" class="">프로젝트 Blog</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/" class="active">프로젝트 Kosta 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-mtc/" class="">프로젝트 Mtc</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/alacritty---alacritty.toml/" class="">alacritty.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/cmakelists.txt/" class="">CMakeLists.txt</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-config---keymaps.lua/" class="">keymaps.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nginx---letsencrypt-%EC%9E%90%EB%8F%99%EA%B0%B1%EC%8B%A0/" class="">Letsencrypt 자동갱신</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/oracle-%EC%97%B0%EA%B2%B0/" class="">Oracle 연결</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/docker-ubuntu%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Ubuntu에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/xmake.lua/" class="">xmake.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/latex-%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EB%AC%B8%EB%B2%95/" class="">기호 모음</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/sql-lite-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/" class="">이미지 넣는법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/" class="">자격증 목록</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>프로젝트 Kosta 2</h3>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#1단계-mosquitto-mqtt-broker-설치-및-실행">1단계: Mosquitto MQTT Broker 설치 및 실행</a></li>
+        <li><a href="#2단계-go-api-server-이전-예제와-동일">2단계: Go API Server (이전 예제와 동일)</a></li>
+        <li><a href="#3단계-mqtt-publisher-python---임베디드-장치-역할">3단계: MQTT Publisher (Python) - 임베디드 장치 역할</a></li>
+        <li><a href="#4단계-mqtt-subscriber-python---api-server-연동-로직-역할">4단계: MQTT Subscriber (Python) - API Server 연동 로직 역할</a></li>
+        <li><a href="#전체-시스템-동작-시나리오">전체 시스템 동작 시나리오:</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><p>네, MQTT Publisher, Broker, Subscriber, 그리고 API Server를 연동하는 전체적인 예제를 보여드리겠습니다.</p>
+<p>이 예제는 다음 구성 요소들을 포함합니다:</p>
+<ol>
+<li><strong>MQTT Broker</strong>: Mosquitto (가장 대중적인 오픈소스 MQTT Broker)</li>
+<li><strong>MQTT Publisher</strong>: Python 스크립트 (임베디드 장치 역할)</li>
+<li><strong>MQTT Subscriber (API Server 연동 로직)</strong>: Python 스크립트 (Broker에서 메시지를 받아 API Server로 전달)</li>
+<li><strong>API Server</strong>: Go Gin 프레임워크 (이전 예제에서 사용한 API 서버)</li>
+</ol>
+<h3 id="1단계-mosquitto-mqtt-broker-설치-및-실행">
+  1단계: Mosquitto MQTT Broker 설치 및 실행
+  <a class="anchor" href="#1%eb%8b%a8%ea%b3%84-mosquitto-mqtt-broker-%ec%84%a4%ec%b9%98-%eb%b0%8f-%ec%8b%a4%ed%96%89">#</a>
+</h3>
+<p>Mosquitto는 MQTT 연동을 위한 필수 요소입니다.</p>
+<ul>
+<li><strong>설치</strong>:
+<ul>
+<li><strong>Ubuntu/Debian</strong>: <code>sudo apt update &amp;&amp; sudo apt install mosquitto mosquitto-clients</code></li>
+<li><strong>macOS (Homebrew)</strong>: <code>brew install mosquitto</code></li>
+<li><strong>Windows</strong>: Mosquitto 공식 웹사이트에서 설치 파일을 다운로드합니다.</li>
+</ul>
+</li>
+<li><strong>실행</strong>:
+<ul>
+<li>대부분의 OS에서 설치 후 자동으로 서비스로 실행됩니다.</li>
+<li>수동 실행: <code>mosquitto -c /etc/mosquitto/mosquitto.conf</code> (설정 파일 경로는 OS마다 다를 수 있습니다)</li>
+<li>기본 포트: 1883</li>
+</ul>
+</li>
+</ul>
+<p>Broker가 실행되는지 확인하는 가장 쉬운 방법은 Mosquitto 클라이언트를 사용하여 구독해보는 것입니다:
+새로운 터미널을 열고 다음 명령어를 실행합니다:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mosquitto_sub -h localhost -p <span style="color:#ae81ff">1883</span> -t <span style="color:#e6db74">&#34;sensor/temperature&#34;</span>
+</span></span></code></pre></div><p>이제 이 터미널은 <code>sensor/temperature</code> 토픽으로 오는 메시지를 기다리게 됩니다.</p>
+<h3 id="2단계-go-api-server-이전-예제와-동일">
+  2단계: Go API Server (이전 예제와 동일)
+  <a class="anchor" href="#2%eb%8b%a8%ea%b3%84-go-api-server-%ec%9d%b4%ec%a0%84-%ec%98%88%ec%a0%9c%ec%99%80-%eb%8f%99%ec%9d%bc">#</a>
+</h3>
+<p>이전 질문에서 제공된 Go API 서버 코드를 그대로 사용합니다. 이 서버는 <code>/api/sensor_data</code>와 같은 엔드포인트를 제공하여 센서 데이터를 받을 것입니다.</p>
+<p><strong>API Server 코드 수정 (New Endpoint for Sensor Data):</strong></p>
+<p><code>main.go</code> 파일에 <code>SensorData</code> 모델과 해당 <code>createHandler</code>를 추가해야 합니다.</p>
+<p>먼저, <code>SensorData</code> 구조체를 정의합니다:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#75715e">// main.go 파일 내</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SensorData</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">gorm</span>.<span style="color:#a6e22e">Model</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">SensorID</span>       <span style="color:#66d9ef">string</span>    <span style="color:#e6db74">`gorm:&#34;type:varchar(50);not null&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Temperature</span>    <span style="color:#66d9ef">float64</span>   <span style="color:#e6db74">`gorm:&#34;not null&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Humidity</span>       <span style="color:#66d9ef">float64</span>   <span style="color:#e6db74">`gorm:&#34;not null&#34;`</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Timestamp</span>      <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Time</span> <span style="color:#e6db74">`gorm:&#34;not null&#34;`</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>이제 <code>initDB</code> 함수에서 <code>SensorData</code>를 <code>AutoMigrate</code>에 추가합니다:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">initDB</span>() <span style="color:#f92672">*</span><span style="color:#a6e22e">gorm</span>.<span style="color:#a6e22e">DB</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">dsn</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">getDSN</span>()
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">db</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">gorm</span>.<span style="color:#a6e22e">Open</span>(<span style="color:#a6e22e">mysql</span>.<span style="color:#a6e22e">Open</span>(<span style="color:#a6e22e">dsn</span>), <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">gorm</span>.<span style="color:#a6e22e">Config</span>{})
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatalf</span>(<span style="color:#e6db74">&#34;데이터베이스 연결 실패: %v&#34;</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">AutoMigrate</span>(
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">Product</span>{},
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">Zone</span>{},
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">Vehicle</span>{},
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">OperationRecord</span>{},
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">OperationProduct</span>{},
+</span></span><span style="display:flex;"><span>		<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">SensorData</span>{}, <span style="color:#75715e">// --- 이 줄 추가 ---</span>
+</span></span><span style="display:flex;"><span>	)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatalf</span>(<span style="color:#e6db74">&#34;데이터베이스 마이그레이션 실패: %v&#34;</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;데이터베이스 연결 및 마이그레이션 성공&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">db</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>마지막으로 <code>main</code> 함수에서 <code>SensorData</code> 엔드포인트를 등록합니다:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">db</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">initDB</span>()
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">router</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">gin</span>.<span style="color:#a6e22e">Default</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">api</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">Group</span>(<span style="color:#e6db74">&#34;/api&#34;</span>)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// ... 기존 라우터들 ...</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#75715e">// Sensor Data Endpoint</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">api</span>.<span style="color:#a6e22e">POST</span>(<span style="color:#e6db74">&#34;/sensor_data&#34;</span>, <span style="color:#a6e22e">createHandler</span>[<span style="color:#a6e22e">SensorData</span>](<span style="color:#a6e22e">db</span>)) <span style="color:#75715e">// --- 이 줄 추가 ---</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">api</span>.<span style="color:#a6e22e">GET</span>(<span style="color:#e6db74">&#34;/sensor_data&#34;</span>, <span style="color:#a6e22e">getAllHandler</span>[<span style="color:#a6e22e">SensorData</span>](<span style="color:#a6e22e">db</span>))  <span style="color:#75715e">// --- 이 줄 추가 ---</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">port</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;:8080&#34;</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;서버가 %s 포트에서 실행 중...&#34;</span>, <span style="color:#a6e22e">port</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">router</span>.<span style="color:#a6e22e">Run</span>(<span style="color:#a6e22e">port</span>); <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatalf</span>(<span style="color:#e6db74">&#34;서버 실행 실패: %v&#34;</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Go API 서버를 실행합니다:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>go run main.go
+</span></span></code></pre></div><h3 id="3단계-mqtt-publisher-python---임베디드-장치-역할">
+  3단계: MQTT Publisher (Python) - 임베디드 장치 역할
+  <a class="anchor" href="#3%eb%8b%a8%ea%b3%84-mqtt-publisher-python---%ec%9e%84%eb%b2%a0%eb%94%94%eb%93%9c-%ec%9e%a5%ec%b9%98-%ec%97%ad%ed%95%a0">#</a>
+</h3>
+<p>이 스크립트는 가상의 센서 데이터를 생성하여 MQTT Broker로 발행합니다.</p>
+<p>필요한 라이브러리 설치: <code>pip install paho-mqtt</code></p>
+<p><code>mqtt_publisher.py</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> paho.mqtt.client <span style="color:#66d9ef">as</span> mqtt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> time
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> random
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># MQTT Broker 설정</span>
+</span></span><span style="display:flex;"><span>BROKER_ADDRESS <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;localhost&#34;</span>
+</span></span><span style="display:flex;"><span>BROKER_PORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">1883</span>
+</span></span><span style="display:flex;"><span>TOPIC <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sensor/temperature&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># MQTT 클라이언트 초기화</span>
+</span></span><span style="display:flex;"><span>client <span style="color:#f92672">=</span> mqtt<span style="color:#f92672">.</span>Client()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">on_connect</span>(client, userdata, flags, rc):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> rc <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">&#34;MQTT Broker에 연결되었습니다!&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span>:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;연결 실패, 에러 코드: </span><span style="color:#e6db74">{</span>rc<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>on_connect <span style="color:#f92672">=</span> on_connect
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 브로커에 연결</span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;MQTT Broker (</span><span style="color:#e6db74">{</span>BROKER_ADDRESS<span style="color:#e6db74">}</span><span style="color:#e6db74">:</span><span style="color:#e6db74">{</span>BROKER_PORT<span style="color:#e6db74">}</span><span style="color:#e6db74">)에 연결 시도...&#34;</span>)
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>connect(BROKER_ADDRESS, BROKER_PORT, <span style="color:#ae81ff">60</span>)
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>loop_start() <span style="color:#75715e"># 백그라운드 스레드에서 네트워크 루프 시작</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>    sensor_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ESP32_001&#34;</span>
+</span></span><span style="display:flex;"><span>    print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;센서 </span><span style="color:#e6db74">{</span>sensor_id<span style="color:#e6db74">}</span><span style="color:#e6db74">로부터 데이터 발행 시작...&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">while</span> <span style="color:#66d9ef">True</span>:
+</span></span><span style="display:flex;"><span>        temperature <span style="color:#f92672">=</span> round(random<span style="color:#f92672">.</span>uniform(<span style="color:#ae81ff">20.0</span>, <span style="color:#ae81ff">30.0</span>), <span style="color:#ae81ff">2</span>) <span style="color:#75715e"># 20.0 ~ 30.0 랜덤 온도</span>
+</span></span><span style="display:flex;"><span>        humidity <span style="color:#f92672">=</span> round(random<span style="color:#f92672">.</span>uniform(<span style="color:#ae81ff">40.0</span>, <span style="color:#ae81ff">60.0</span>), <span style="color:#ae81ff">2</span>)    <span style="color:#75715e"># 40.0 ~ 60.0 랜덤 습도</span>
+</span></span><span style="display:flex;"><span>        timestamp <span style="color:#f92672">=</span> int(time<span style="color:#f92672">.</span>time() <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span>) <span style="color:#75715e"># 밀리초 단위 타임스탬프</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        payload <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;sensorID&#34;</span>: sensor_id,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;temperature&#34;</span>: temperature,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;humidity&#34;</span>: humidity,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;timestamp&#34;</span>: timestamp
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># 메시지 발행</span>
+</span></span><span style="display:flex;"><span>        client<span style="color:#f92672">.</span>publish(TOPIC, json<span style="color:#f92672">.</span>dumps(payload))
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;&#39;</span><span style="color:#e6db74">{</span>TOPIC<span style="color:#e6db74">}</span><span style="color:#e6db74">&#39; 토픽 발행: </span><span style="color:#e6db74">{</span>json<span style="color:#f92672">.</span>dumps(payload)<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">5</span>) <span style="color:#75715e"># 5초마다 데이터 발행</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyboardInterrupt</span>:
+</span></span><span style="display:flex;"><span>    print(<span style="color:#e6db74">&#34;발행 중단.&#34;</span>)
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">finally</span>:
+</span></span><span style="display:flex;"><span>    client<span style="color:#f92672">.</span>loop_stop() <span style="color:#75715e"># 네트워크 루프 중지</span>
+</span></span><span style="display:flex;"><span>    client<span style="color:#f92672">.</span>disconnect()
+</span></span><span style="display:flex;"><span>    print(<span style="color:#e6db74">&#34;MQTT 연결 해제.&#34;</span>)
+</span></span></code></pre></div><p><code>python mqtt_publisher.py</code> 실행. Mosquitto 클라이언트(<code>mosquitto_sub</code>) 터미널에서 발행되는 메시지를 확인할 수 있을 겁니다.</p>
+<h3 id="4단계-mqtt-subscriber-python---api-server-연동-로직-역할">
+  4단계: MQTT Subscriber (Python) - API Server 연동 로직 역할
+  <a class="anchor" href="#4%eb%8b%a8%ea%b3%84-mqtt-subscriber-python---api-server-%ec%97%b0%eb%8f%99-%eb%a1%9c%ec%a7%81-%ec%97%ad%ed%95%a0">#</a>
+</h3>
+<p>이 스크립트는 MQTT Broker로부터 메시지를 구독하고, 수신된 메시지를 Go API 서버로 HTTP POST 요청을 통해 전달합니다.</p>
+<p>필요한 라이브러리 설치: <code>pip install paho-mqtt requests</code></p>
+<p><code>mqtt_api_integrator.py</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> paho.mqtt.client <span style="color:#66d9ef">as</span> mqtt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> requests
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> datetime
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># MQTT Broker 설정</span>
+</span></span><span style="display:flex;"><span>BROKER_ADDRESS <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;localhost&#34;</span>
+</span></span><span style="display:flex;"><span>BROKER_PORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">1883</span>
+</span></span><span style="display:flex;"><span>TOPIC <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sensor/temperature&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># API Server 설정</span>
+</span></span><span style="display:flex;"><span>API_SERVER_URL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;http://localhost:8080/api/sensor_data&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># MQTT 클라이언트 초기화</span>
+</span></span><span style="display:flex;"><span>client <span style="color:#f92672">=</span> mqtt<span style="color:#f92672">.</span>Client()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">on_connect</span>(client, userdata, flags, rc):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> rc <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">&#34;MQTT Broker에 연결되었습니다!&#34;</span>)
+</span></span><span style="display:flex;"><span>        client<span style="color:#f92672">.</span>subscribe(TOPIC) <span style="color:#75715e"># 연결 성공 시 토픽 구독</span>
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;토픽 &#39;</span><span style="color:#e6db74">{</span>TOPIC<span style="color:#e6db74">}</span><span style="color:#e6db74">&#39; 구독 시작.&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span>:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;연결 실패, 에러 코드: </span><span style="color:#e6db74">{</span>rc<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">on_message</span>(client, userdata, msg):
+</span></span><span style="display:flex;"><span>    print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;메시지 수신 - 토픽: </span><span style="color:#e6db74">{</span>msg<span style="color:#f92672">.</span>topic<span style="color:#e6db74">}</span><span style="color:#e6db74">, 페이로드: </span><span style="color:#e6db74">{</span>msg<span style="color:#f92672">.</span>payload<span style="color:#f92672">.</span>decode()<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>        data <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(msg<span style="color:#f92672">.</span>payload<span style="color:#f92672">.</span>decode())
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># API 서버로 보낼 데이터 형식 변환 (Go 모델에 맞게)</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># Go의 time.Time은 ISO 8601 형식 문자열을 잘 처리합니다.</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># Python timestamp는 초 단위이므로, Go의 time.Time으로 변환하기 쉽도록 ISO 8601 문자열로 변환하는 것이 일반적입니다.</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># 고의 float64, Go의 string에 맞게.</span>
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># timestamp가 밀리초 단위로 가정하고 초 단위로 변환 후 datetime 객체 생성</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;timestamp&#39;</span> <span style="color:#f92672">in</span> data:
+</span></span><span style="display:flex;"><span>            dt_object <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>fromtimestamp(data[<span style="color:#e6db74">&#39;timestamp&#39;</span>] <span style="color:#f92672">/</span> <span style="color:#ae81ff">1000.0</span>)
+</span></span><span style="display:flex;"><span>            data[<span style="color:#e6db74">&#39;timestamp&#39;</span>] <span style="color:#f92672">=</span> dt_object<span style="color:#f92672">.</span>isoformat() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;Z&#34;</span> <span style="color:#75715e"># GORM이 UTC 시간을 기대하므로 &#39;Z&#39; 추가</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span>:
+</span></span><span style="display:flex;"><span>            data[<span style="color:#e6db74">&#39;timestamp&#39;</span>] <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>utcnow()<span style="color:#f92672">.</span>isoformat() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;Z&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># 필드 이름 매핑</span>
+</span></span><span style="display:flex;"><span>        api_payload <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;SensorID&#34;</span>: data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;sensorID&#34;</span>),
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Temperature&#34;</span>: data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;temperature&#34;</span>),
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Humidity&#34;</span>: data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;humidity&#34;</span>),
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;Timestamp&#34;</span>: data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;timestamp&#34;</span>)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e"># API 서버로 POST 요청 보내기</span>
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;API 서버로 POST 요청 전송: </span><span style="color:#e6db74">{</span>json<span style="color:#f92672">.</span>dumps(api_payload)<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>        response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(API_SERVER_URL, json<span style="color:#f92672">=</span>api_payload)
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">201</span>:
+</span></span><span style="display:flex;"><span>            print(<span style="color:#e6db74">&#34;데이터가 API 서버에 성공적으로 전송되었습니다.&#34;</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#75715e"># print(response.json()) # API 서버 응답 확인</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">else</span>:
+</span></span><span style="display:flex;"><span>            print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;API 서버 전송 실패. 상태 코드: </span><span style="color:#e6db74">{</span>response<span style="color:#f92672">.</span>status_code<span style="color:#e6db74">}</span><span style="color:#e6db74">, 응답: </span><span style="color:#e6db74">{</span>response<span style="color:#f92672">.</span>text<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">except</span> json<span style="color:#f92672">.</span>JSONDecodeError:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">&#34;JSON 디코딩 오류: 유효하지 않은 페이로드입니다.&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">except</span> requests<span style="color:#f92672">.</span>exceptions<span style="color:#f92672">.</span>RequestException <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;API 서버 요청 중 오류 발생: </span><span style="color:#e6db74">{</span>e<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>        print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;예상치 못한 오류 발생: </span><span style="color:#e6db74">{</span>e<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>on_connect <span style="color:#f92672">=</span> on_connect
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>on_message <span style="color:#f92672">=</span> on_message
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 브로커에 연결</span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;MQTT Broker (</span><span style="color:#e6db74">{</span>BROKER_ADDRESS<span style="color:#e6db74">}</span><span style="color:#e6db74">:</span><span style="color:#e6db74">{</span>BROKER_PORT<span style="color:#e6db74">}</span><span style="color:#e6db74">)에 연결 시도...&#34;</span>)
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>connect(BROKER_ADDRESS, BROKER_PORT, <span style="color:#ae81ff">60</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 네트워크 루프를 무한정 실행하여 메시지 대기</span>
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>loop_forever()
+</span></span></code></pre></div><p><code>python mqtt_api_integrator.py</code> 실행.</p>
+<h3 id="전체-시스템-동작-시나리오">
+  전체 시스템 동작 시나리오:
+  <a class="anchor" href="#%ec%a0%84%ec%b2%b4-%ec%8b%9c%ec%8a%a4%ed%85%9c-%eb%8f%99%ec%9e%91-%ec%8b%9c%eb%82%98%eb%a6%ac%ec%98%a4">#</a>
+</h3>
+<ol>
+<li><strong>Mosquitto Broker</strong>가 실행됩니다 (<code>mosquitto</code>).</li>
+<li><strong>Go API Server</strong>가 실행됩니다 (<code>go run main.go</code>). <code>/api/sensor_data</code> 엔드포인트를 통해 센서 데이터를 받을 준비를 합니다.</li>
+<li><strong>MQTT Publisher</strong> (<code>mqtt_publisher.py</code>)가 실행됩니다. 5초마다 가상의 센서 데이터를 JSON 형식으로 만들어 <code>sensor/temperature</code> 토픽으로 MQTT Broker에 발행합니다.</li>
+<li><strong>MQTT Subscriber (API Integrator)</strong> (<code>mqtt_api_integrator.py</code>)가 실행됩니다. <code>sensor/temperature</code> 토픽을 구독하여 MQTT Broker로부터 Publisher가 보낸 메시지를 실시간으로 수신합니다.</li>
+<li>Subscriber는 수신된 MQTT 메시지(JSON 페이로드)를 파싱하고, Go API 서버의 <code>SensorData</code> 모델에 맞는 형식으로 데이터를 준비합니다.</li>
+<li>Subscriber는 준비된 데이터를 Go API 서버의 <code>/api/sensor_data</code> 엔드포인트로 HTTP POST 요청을 보냅니다.</li>
+<li>Go API 서버는 이 POST 요청을 받아 데이터를 데이터베이스에 저장합니다. 저장 성공 시 201 Created 응답을 Subscriber에게 보냅니다.</li>
+</ol>
+<p>이제 Postman이나 cURL을 사용하여 Go API 서버의 <code>/api/sensor_data</code> 엔드포인트에 <code>GET</code> 요청을 보내면 데이터베이스에 저장된 센서 데이터 목록을 확인할 수 있습니다:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl http://localhost:8080/api/sensor_data
+</span></span></code></pre></div><p>이 예제는 임베디드 장치와 클라우드/API 서버 간의 MQTT 기반 데이터 파이프라인의 기본적인 형태를 보여줍니다. 실제 프로덕션 환경에서는 보안(TLS/SSL, 인증), 에러 처리, 재시도 로직, 고가용성 등을 위한 더 많은 고려가 필요합니다.</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#1단계-mosquitto-mqtt-broker-설치-및-실행">1단계: Mosquitto MQTT Broker 설치 및 실행</a></li>
+        <li><a href="#2단계-go-api-server-이전-예제와-동일">2단계: Go API Server (이전 예제와 동일)</a></li>
+        <li><a href="#3단계-mqtt-publisher-python---임베디드-장치-역할">3단계: MQTT Publisher (Python) - 임베디드 장치 역할</a></li>
+        <li><a href="#4단계-mqtt-subscriber-python---api-server-연동-로직-역할">4단계: MQTT Subscriber (Python) - API Server 연동 로직 역할</a></li>
+        <li><a href="#전체-시스템-동작-시나리오">전체 시스템 동작 시나리오:</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

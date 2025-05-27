@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="ko-kr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="좋은 질문이에요!
+라즈베리파이(Raspberry Pi)와 통신하는 API 서버를 만들 때는, 일반적인 웹 애플리케이션보다 안정성, 보안, 네트워크 환경, 데이터 포맷, 프로토콜 등을 더 신경 써야 합니다.
+
+
+  🧱 기본 개념: 라즈베리파이 ↔ API 서버 통신 구조
+  #
+
+라즈베리파이 (센서 &#43; MQTT 또는 HTTP 클라이언트)
+         ↓
+네트워크 (Wi-Fi / 이더넷 / LTE 등)
+         ↓
+API 서버 (Go &#43; Gin &#43; GORM 등)
+         ↓
+MySQL / PostgreSQL 등 DB 저장
+         ↓
+웹/앱에서 조회 가능
+
+
+  ✅ 1. API 서버 설계 방향
+  #
+
+
+  
+      
+          항목
+          설명
+      
+  
+  
+      
+          통신 방식
+          HTTP REST API or MQTT or WebSocket 등
+      
+      
+          보안
+          HTTPS, 인증(Token/JWT), IP 제한 등
+      
+      
+          데이터 포맷
+          JSON 사용 권장
+      
+      
+          에러 처리
+          정확한 HTTP 상태 코드 반환
+      
+      
+          로그 기록
+          요청 로그, 오류 로그 남기기
+      
+  
+
+
+
+  📡 2. 라즈베리파이와 주로 사용하는 통신 방식
+  #
+
+
+  1) HTTP REST API
+  #
+
+
+가장 간단하고 직관적
+라즈베리파이에서 curl, Python requests 등을 이용해 POST 요청 전송
+
+
+  예시 (Python):
+  #
+
+import requests
+import json
+
+url = &#34;http://api.yourserver.com/data&#34;
+data = {
+    &#34;device_id&#34;: &#34;raspi-01&#34;,
+    &#34;temperature&#34;: 25.5,
+    &#34;humidity&#34;: 60.3
+}
+
+response = requests.post(url, json=data)
+print(response.status_code)
+
+  Go(Gin) API 예시:
+  #
+
+r.POST(&#34;/data&#34;, func(c *gin.Context) {
+	var payload struct {
+		DeviceID    string  `json:&#34;device_id&#34;`
+		Temperature float32 `json:&#34;temperature&#34;`
+		Humidity    float32 `json:&#34;humidity&#34;`
+	}
+
+	if err := c.ShouldBindJSON(&amp;payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{&#34;error&#34;: err.Error()})
+		return
+	}
+
+	db.Create(&amp;models.SensorData{
+		DeviceID:    payload.DeviceID,
+		Temperature: payload.Temperature,
+		Humidity:    payload.Humidity,
+	})
+
+	c.JSON(http.StatusOK, gin.H{&#34;status&#34;: &#34;success&#34;})
+})
+
+
+  2) MQTT 통신 (추천)
+  #
+
+
+실시간 센서 데이터 수신 시 유리
+라즈베리파이가 발행(publish), 서버가 구독(subscribe)
+
+
+  라즈베리파이에서 예시 (Python):
+  #
+
+import paho.mqtt.client as mqtt
+import json
+
+client = mqtt.Client()
+client.connect(&#34;your.server.ip&#34;, 1883)
+
+data = {
+    &#34;device_id&#34;: &#34;raspi-01&#34;,
+    &#34;temperature&#34;: 25.5,
+    &#34;humidity&#34;: 60.3
+}
+
+client.publish(&#34;sensor/data&#34;, json.dumps(data))
+
+  Go 서버에서 수신 (MQTT Subscriber):
+  #
+
+func StartMQTTSubscriber(db *gorm.DB, broker, topic string) {
+	opts := paho_mqtt_golang.NewClientOptions().AddBroker(broker)
+	client := paho_mqtt_golang.NewClient(opts)
+	client.Connect()
+
+	token := client.Subscribe(topic, 1, func(client paho_mqtt_golang.Client, msg paho_mqtt_golang.Message) {
+		var data map[string]interface{}
+		json.Unmarshal(msg.Payload(), &amp;data)
+
+		sensor := models.SensorData{
+			DeviceID:    data[&#34;device_id&#34;].(string),
+			Temperature: float32(data[&#34;temperature&#34;].(float64)),
+			Humidity:    float32(data[&#34;humidity&#34;].(float64)),
+		}
+		db.Create(&amp;sensor)
+	})
+	token.Wait()
+}
+
+
+  3) WebSocket (선택사항)
+  #
+
+
+실시간 양방향 통신 필요 시
+예: 서버 → 라즈베리파이로 커맨드 전달 (예: LED 켜짐/꺼짐 명령)
+
+
+
+  🔐 3. 보안 관련 고려 사항
+  #
+
+
+  
+      
+          항목
+          설명
+      
+  
+  
+      
+          HTTPS
+          반드시 TLS 적용 (Let&#39;s Encrypt)
+      
+      
+          인증
+          JWT 토큰이나 API Key로 접근 제어
+      
+      
+          IP 제한
+          특정 IP(라즈베리파이의 공인 IP)만 접근 허용
+      
+      
+          Rate Limiting
+          과다 요청 차단
+      
+      
+          로그 기록
+          누가 언제 어떤 데이터를 보냈는지 기록
+      
+  
+
+
+
+  🌐 4. 네트워크 설정 주의점
+  #
+
+
+  
+      
+          항목
+          설명
+      
+  
+  
+      
+          공인 IP vs 내부망
+          외부에서 접근 가능해야 함
+      
+      
+          방화벽 설정
+          API 포트(80, 443), MQTT 포트(1883, 8883) 열기
+      
+      
+          DDNS
+          공인 IP가 변하는 경우 도메인으로 고정 관리 가능
+      
+      
+          NAT 설정
+          라우터에서 포트 포워딩 필요할 수 있음
+      
+  
+
+
+
+  📦 5. 운영 환경 구성 추천
+  #
+
+
+아래는 Docker &#43; Traefik &#43; Go &#43; MySQL 구성입니다.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://baboyiban.github.io/docs/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/">
+  <meta property="og:site_name" content="choidaruhan">
+  <meta property="og:title" content="choidaruhan">
+  <meta property="og:description" content="좋은 질문이에요!
+라즈베리파이(Raspberry Pi)와 통신하는 API 서버를 만들 때는, 일반적인 웹 애플리케이션보다 안정성, 보안, 네트워크 환경, 데이터 포맷, 프로토콜 등을 더 신경 써야 합니다.
+🧱 기본 개념: 라즈베리파이 ↔ API 서버 통신 구조 # 라즈베리파이 (센서 &#43; MQTT 또는 HTTP 클라이언트) ↓ 네트워크 (Wi-Fi / 이더넷 / LTE 등) ↓ API 서버 (Go &#43; Gin &#43; GORM 등) ↓ MySQL / PostgreSQL 등 DB 저장 ↓ 웹/앱에서 조회 가능 ✅ 1. API 서버 설계 방향 # 항목 설명 통신 방식 HTTP REST API or MQTT or WebSocket 등 보안 HTTPS, 인증(Token/JWT), IP 제한 등 데이터 포맷 JSON 사용 권장 에러 처리 정확한 HTTP 상태 코드 반환 로그 기록 요청 로그, 오류 로그 남기기 📡 2. 라즈베리파이와 주로 사용하는 통신 방식 # 1) HTTP REST API # 가장 간단하고 직관적 라즈베리파이에서 curl, Python requests 등을 이용해 POST 요청 전송 예시 (Python): # import requests import json url = &#34;http://api.yourserver.com/data&#34; data = { &#34;device_id&#34;: &#34;raspi-01&#34;, &#34;temperature&#34;: 25.5, &#34;humidity&#34;: 60.3 } response = requests.post(url, json=data) print(response.status_code) Go(Gin) API 예시: # r.POST(&#34;/data&#34;, func(c *gin.Context) { var payload struct { DeviceID string `json:&#34;device_id&#34;` Temperature float32 `json:&#34;temperature&#34;` Humidity float32 `json:&#34;humidity&#34;` } if err := c.ShouldBindJSON(&amp;payload); err != nil { c.JSON(http.StatusBadRequest, gin.H{&#34;error&#34;: err.Error()}) return } db.Create(&amp;models.SensorData{ DeviceID: payload.DeviceID, Temperature: payload.Temperature, Humidity: payload.Humidity, }) c.JSON(http.StatusOK, gin.H{&#34;status&#34;: &#34;success&#34;}) }) 2) MQTT 통신 (추천) # 실시간 센서 데이터 수신 시 유리 라즈베리파이가 발행(publish), 서버가 구독(subscribe) 라즈베리파이에서 예시 (Python): # import paho.mqtt.client as mqtt import json client = mqtt.Client() client.connect(&#34;your.server.ip&#34;, 1883) data = { &#34;device_id&#34;: &#34;raspi-01&#34;, &#34;temperature&#34;: 25.5, &#34;humidity&#34;: 60.3 } client.publish(&#34;sensor/data&#34;, json.dumps(data)) Go 서버에서 수신 (MQTT Subscriber): # func StartMQTTSubscriber(db *gorm.DB, broker, topic string) { opts := paho_mqtt_golang.NewClientOptions().AddBroker(broker) client := paho_mqtt_golang.NewClient(opts) client.Connect() token := client.Subscribe(topic, 1, func(client paho_mqtt_golang.Client, msg paho_mqtt_golang.Message) { var data map[string]interface{} json.Unmarshal(msg.Payload(), &amp;data) sensor := models.SensorData{ DeviceID: data[&#34;device_id&#34;].(string), Temperature: float32(data[&#34;temperature&#34;].(float64)), Humidity: float32(data[&#34;humidity&#34;].(float64)), } db.Create(&amp;sensor) }) token.Wait() } 3) WebSocket (선택사항) # 실시간 양방향 통신 필요 시 예: 서버 → 라즈베리파이로 커맨드 전달 (예: LED 켜짐/꺼짐 명령) 🔐 3. 보안 관련 고려 사항 # 항목 설명 HTTPS 반드시 TLS 적용 (Let&#39;s Encrypt) 인증 JWT 토큰이나 API Key로 접근 제어 IP 제한 특정 IP(라즈베리파이의 공인 IP)만 접근 허용 Rate Limiting 과다 요청 차단 로그 기록 누가 언제 어떤 데이터를 보냈는지 기록 🌐 4. 네트워크 설정 주의점 # 항목 설명 공인 IP vs 내부망 외부에서 접근 가능해야 함 방화벽 설정 API 포트(80, 443), MQTT 포트(1883, 8883) 열기 DDNS 공인 IP가 변하는 경우 도메인으로 고정 관리 가능 NAT 설정 라우터에서 포트 포워딩 필요할 수 있음 📦 5. 운영 환경 구성 추천 # 아래는 Docker &#43; Traefik &#43; Go &#43; MySQL 구성입니다.">
+  <meta property="og:locale" content="ko_kr">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+<title>Mqtt 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어? | choidaruhan</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="https://baboyiban.github.io/docs/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/">
+<link rel="stylesheet" href="/book.min.26ab4dc3f6076ceda2f9c263aa4029ae3341dbcce339f901aa432b11da6e5894.css" integrity="sha256-JqtNw/YHbO2i&#43;cJjqkAprjNB28zjOfkBqkMrEdpuWJQ=" crossorigin="anonymous">
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.8c12f9cfc0df3309935b6ba1f5b8c31d6b4b302d064ef56974b471b04abdabca.js" integrity="sha256-jBL5z8DfMwmTW2uh9bjDHWtLMC0GTvVpdLRxsEq9q8o=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>choidaruhan</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/" class="">Ai가 어려워하는 문제 1 추가</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1/" class="">Ai가 어려워하는 문제 1</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-2/" class="">Ai가 어려워하는 문제 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-3/" class="">Ai가 어려워하는 문제 3</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-4/" class="">Ai가 어려워하는 문제 4</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/" class="">Aws 연결하는 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/c-init.bat/" class="">C Init.bat</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/class-%EC%9D%B4%EB%A6%84-bem/" class="">Class 이름 Bem</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/" class="">Conan으로 C언어 프로젝트 디버그, 컴파일, 실행하는 방법 요약</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-color-%EC%A1%B0%ED%95%A9/" class="">Css Color 조합</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-gradient-image/" class="">Css Gradient Image</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-table/" class="">Css Table</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/css-%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/" class="">Css 초기 세팅</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/docker-%EC%82%AD%EC%A0%9C-%EB%AA%85%EB%A0%B9%EC%96%B4/" class="">Docker 삭제 명령어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/font-size/" class="">Font Size</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ghostty---config/" class="">Ghostty Config</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/git-add%EC%99%80-commit/" class="">Git Add와 Commit</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/git-username-password-%EC%A0%80%EC%9E%A5/" class="">Git Username Password 저장</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/helix-editor---config.toml/" class="">Helix Editor Config.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/helix-editor---languages.toml/" class="">Helix Editor Languages.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/helix-editor-%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/" class="">Helix Editor 언어 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/" class="active">Mqtt 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어?</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-plugin---colorscheme.lua/" class="">Neo Vim Plugin Colorscheme.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-plugin---oil.lua/" class="">Neo Vim Plugin Oil.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-plugin---telescope.lua/" class="">Neo Vim Plugin Telescope.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nextjs---failed-websocket-is-closed-due-to-suspension./" class="">Nextjs Failed Web Socket Is Closed Due to Suspension.</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nextjs-%EA%B5%AC%EC%A1%B0/" class="">Nextjs 구조</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nginx---ssl-%EC%9D%B8%EC%A6%9D-%EB%B0%9B%EA%B8%B0/" class="">Nginx Ssl 인증 받기</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/prisma-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">Prisma 사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/qwen-2.5-coder/" class="">Qwen 2.5 Coder</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/react-flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/" class="">React Flux 패턴 간단 예제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ubuntu-%EC%84%A4%EC%A0%95/" class="">Ubuntu 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ubuntu-%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/" class="">Ubuntu 저장 공간 확인</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/ubuntu-%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/" class="">Ubuntu 한글 깨짐 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/uiux-%EC%83%89%EC%83%81/" class="">Uiux 색상</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/windows-%EC%84%A4%EC%B9%98-%EC%A4%91-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%97%B0%EA%B2%B0-%EB%AC%B8%EC%A0%9C/" class="">Windows 설치 중 네트워크 연결 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/xmake-%EC%82%AC%EC%9A%A9%EB%B2%95/" class="">Xmake 사용법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/zed-editor-windows%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Zed Editor Windows에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/zshrc-%EC%84%A4%EC%A0%95/" class="">Zshrc 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/" class="">나만의 프로그래밍 언어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EB%B0%9C%EB%8F%84%EB%A5%B4%ED%94%84-%EA%B5%90%EC%9C%A1/" class="">발도르프 교육</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98/" class="">알고리즘</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-blog/" class="">프로젝트 Blog</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/" class="">프로젝트 Kosta 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-mtc/" class="">프로젝트 Mtc</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/alacritty---alacritty.toml/" class="">alacritty.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/cmakelists.txt/" class="">CMakeLists.txt</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/neovim-config---keymaps.lua/" class="">keymaps.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/nginx---letsencrypt-%EC%9E%90%EB%8F%99%EA%B0%B1%EC%8B%A0/" class="">Letsencrypt 자동갱신</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/oracle-%EC%97%B0%EA%B2%B0/" class="">Oracle 연결</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/docker-ubuntu%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Ubuntu에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/xmake.lua/" class="">xmake.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/latex-%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EB%AC%B8%EB%B2%95/" class="">기호 모음</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/sql-lite-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/" class="">이미지 넣는법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docs/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/" class="">자격증 목록</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Mqtt 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어?</h3>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#-기본-개념-라즈베리파이--api-서버-통신-구조">🧱 기본 개념: 라즈베리파이 ↔ API 서버 통신 구조</a></li>
+    <li><a href="#-1-api-서버-설계-방향">✅ 1. API 서버 설계 방향</a></li>
+    <li><a href="#-2-라즈베리파이와-주로-사용하는-통신-방식">📡 2. 라즈베리파이와 주로 사용하는 통신 방식</a>
+      <ul>
+        <li><a href="#1-http-rest-api">1) <strong>HTTP REST API</strong></a></li>
+        <li><a href="#2-mqtt-통신-추천">2) <strong>MQTT 통신 (추천)</strong></a></li>
+        <li><a href="#3-websocket-선택사항">3) <strong>WebSocket</strong> (선택사항)</a></li>
+      </ul>
+    </li>
+    <li><a href="#-3-보안-관련-고려-사항">🔐 3. 보안 관련 고려 사항</a></li>
+    <li><a href="#-4-네트워크-설정-주의점">🌐 4. 네트워크 설정 주의점</a></li>
+    <li><a href="#-5-운영-환경-구성-추천">📦 5. 운영 환경 구성 추천</a></li>
+    <li><a href="#-요약">✅ 요약</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><p>좋은 질문이에요!<br>
+<strong>라즈베리파이(Raspberry Pi)와 통신하는 API 서버를 만들 때는</strong>, 일반적인 웹 애플리케이션보다 <strong>안정성, 보안, 네트워크 환경, 데이터 포맷, 프로토콜 등</strong>을 더 신경 써야 합니다.</p>
+<hr>
+<h2 id="-기본-개념-라즈베리파이--api-서버-통신-구조">
+  🧱 기본 개념: 라즈베리파이 ↔ API 서버 통신 구조
+  <a class="anchor" href="#-%ea%b8%b0%eb%b3%b8-%ea%b0%9c%eb%85%90-%eb%9d%bc%ec%a6%88%eb%b2%a0%eb%a6%ac%ed%8c%8c%ec%9d%b4--api-%ec%84%9c%eb%b2%84-%ed%86%b5%ec%8b%a0-%ea%b5%ac%ec%a1%b0">#</a>
+</h2>
+<pre tabindex="0"><code>라즈베리파이 (센서 + MQTT 또는 HTTP 클라이언트)
+         ↓
+네트워크 (Wi-Fi / 이더넷 / LTE 등)
+         ↓
+API 서버 (Go + Gin + GORM 등)
+         ↓
+MySQL / PostgreSQL 등 DB 저장
+         ↓
+웹/앱에서 조회 가능
+</code></pre><hr>
+<h2 id="-1-api-서버-설계-방향">
+  ✅ 1. API 서버 설계 방향
+  <a class="anchor" href="#-1-api-%ec%84%9c%eb%b2%84-%ec%84%a4%ea%b3%84-%eb%b0%a9%ed%96%a5">#</a>
+</h2>
+<table>
+  <thead>
+      <tr>
+          <th>항목</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>통신 방식</strong></td>
+          <td>HTTP REST API or MQTT or WebSocket 등</td>
+      </tr>
+      <tr>
+          <td><strong>보안</strong></td>
+          <td>HTTPS, 인증(Token/JWT), IP 제한 등</td>
+      </tr>
+      <tr>
+          <td><strong>데이터 포맷</strong></td>
+          <td>JSON 사용 권장</td>
+      </tr>
+      <tr>
+          <td><strong>에러 처리</strong></td>
+          <td>정확한 HTTP 상태 코드 반환</td>
+      </tr>
+      <tr>
+          <td><strong>로그 기록</strong></td>
+          <td>요청 로그, 오류 로그 남기기</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="-2-라즈베리파이와-주로-사용하는-통신-방식">
+  📡 2. 라즈베리파이와 주로 사용하는 통신 방식
+  <a class="anchor" href="#-2-%eb%9d%bc%ec%a6%88%eb%b2%a0%eb%a6%ac%ed%8c%8c%ec%9d%b4%ec%99%80-%ec%a3%bc%eb%a1%9c-%ec%82%ac%ec%9a%a9%ed%95%98%eb%8a%94-%ed%86%b5%ec%8b%a0-%eb%b0%a9%ec%8b%9d">#</a>
+</h2>
+<h3 id="1-http-rest-api">
+  1) <strong>HTTP REST API</strong>
+  <a class="anchor" href="#1-http-rest-api">#</a>
+</h3>
+<ul>
+<li>가장 간단하고 직관적</li>
+<li>라즈베리파이에서 <code>curl</code>, Python <code>requests</code> 등을 이용해 POST 요청 전송</li>
+</ul>
+<h4 id="예시-python">
+  예시 (Python):
+  <a class="anchor" href="#%ec%98%88%ec%8b%9c-python">#</a>
+</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> requests
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;http://api.yourserver.com/data&#34;</span>
+</span></span><span style="display:flex;"><span>data <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;device_id&#34;</span>: <span style="color:#e6db74">&#34;raspi-01&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;temperature&#34;</span>: <span style="color:#ae81ff">25.5</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;humidity&#34;</span>: <span style="color:#ae81ff">60.3</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(url, json<span style="color:#f92672">=</span>data)
+</span></span><span style="display:flex;"><span>print(response<span style="color:#f92672">.</span>status_code)
+</span></span></code></pre></div><h4 id="gogin-api-예시">
+  Go(Gin) API 예시:
+  <a class="anchor" href="#gogin-api-%ec%98%88%ec%8b%9c">#</a>
+</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#a6e22e">r</span>.<span style="color:#a6e22e">POST</span>(<span style="color:#e6db74">&#34;/data&#34;</span>, <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">c</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">gin</span>.<span style="color:#a6e22e">Context</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">payload</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">DeviceID</span>    <span style="color:#66d9ef">string</span>  <span style="color:#e6db74">`json:&#34;device_id&#34;`</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Temperature</span> <span style="color:#66d9ef">float32</span> <span style="color:#e6db74">`json:&#34;temperature&#34;`</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Humidity</span>    <span style="color:#66d9ef">float32</span> <span style="color:#e6db74">`json:&#34;humidity&#34;`</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">c</span>.<span style="color:#a6e22e">ShouldBindJSON</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">payload</span>); <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">c</span>.<span style="color:#a6e22e">JSON</span>(<span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">StatusBadRequest</span>, <span style="color:#a6e22e">gin</span>.<span style="color:#a6e22e">H</span>{<span style="color:#e6db74">&#34;error&#34;</span>: <span style="color:#a6e22e">err</span>.<span style="color:#a6e22e">Error</span>()})
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">Create</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">models</span>.<span style="color:#a6e22e">SensorData</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">DeviceID</span>:    <span style="color:#a6e22e">payload</span>.<span style="color:#a6e22e">DeviceID</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Temperature</span>: <span style="color:#a6e22e">payload</span>.<span style="color:#a6e22e">Temperature</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Humidity</span>:    <span style="color:#a6e22e">payload</span>.<span style="color:#a6e22e">Humidity</span>,
+</span></span><span style="display:flex;"><span>	})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">c</span>.<span style="color:#a6e22e">JSON</span>(<span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">StatusOK</span>, <span style="color:#a6e22e">gin</span>.<span style="color:#a6e22e">H</span>{<span style="color:#e6db74">&#34;status&#34;</span>: <span style="color:#e6db74">&#34;success&#34;</span>})
+</span></span><span style="display:flex;"><span>})
+</span></span></code></pre></div><hr>
+<h3 id="2-mqtt-통신-추천">
+  2) <strong>MQTT 통신 (추천)</strong>
+  <a class="anchor" href="#2-mqtt-%ed%86%b5%ec%8b%a0-%ec%b6%94%ec%b2%9c">#</a>
+</h3>
+<ul>
+<li>실시간 센서 데이터 수신 시 유리</li>
+<li>라즈베리파이가 발행(publish), 서버가 구독(subscribe)</li>
+</ul>
+<h4 id="라즈베리파이에서-예시-python">
+  라즈베리파이에서 예시 (Python):
+  <a class="anchor" href="#%eb%9d%bc%ec%a6%88%eb%b2%a0%eb%a6%ac%ed%8c%8c%ec%9d%b4%ec%97%90%ec%84%9c-%ec%98%88%ec%8b%9c-python">#</a>
+</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> paho.mqtt.client <span style="color:#66d9ef">as</span> mqtt
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>client <span style="color:#f92672">=</span> mqtt<span style="color:#f92672">.</span>Client()
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>connect(<span style="color:#e6db74">&#34;your.server.ip&#34;</span>, <span style="color:#ae81ff">1883</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>data <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;device_id&#34;</span>: <span style="color:#e6db74">&#34;raspi-01&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;temperature&#34;</span>: <span style="color:#ae81ff">25.5</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;humidity&#34;</span>: <span style="color:#ae81ff">60.3</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>client<span style="color:#f92672">.</span>publish(<span style="color:#e6db74">&#34;sensor/data&#34;</span>, json<span style="color:#f92672">.</span>dumps(data))
+</span></span></code></pre></div><h4 id="go-서버에서-수신-mqtt-subscriber">
+  Go 서버에서 수신 (MQTT Subscriber):
+  <a class="anchor" href="#go-%ec%84%9c%eb%b2%84%ec%97%90%ec%84%9c-%ec%88%98%ec%8b%a0-mqtt-subscriber">#</a>
+</h4>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">StartMQTTSubscriber</span>(<span style="color:#a6e22e">db</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">gorm</span>.<span style="color:#a6e22e">DB</span>, <span style="color:#a6e22e">broker</span>, <span style="color:#a6e22e">topic</span> <span style="color:#66d9ef">string</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">opts</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">paho_mqtt_golang</span>.<span style="color:#a6e22e">NewClientOptions</span>().<span style="color:#a6e22e">AddBroker</span>(<span style="color:#a6e22e">broker</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">client</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">paho_mqtt_golang</span>.<span style="color:#a6e22e">NewClient</span>(<span style="color:#a6e22e">opts</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">client</span>.<span style="color:#a6e22e">Connect</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">token</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">client</span>.<span style="color:#a6e22e">Subscribe</span>(<span style="color:#a6e22e">topic</span>, <span style="color:#ae81ff">1</span>, <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">client</span> <span style="color:#a6e22e">paho_mqtt_golang</span>.<span style="color:#a6e22e">Client</span>, <span style="color:#a6e22e">msg</span> <span style="color:#a6e22e">paho_mqtt_golang</span>.<span style="color:#a6e22e">Message</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">data</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">string</span>]<span style="color:#66d9ef">interface</span>{}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">json</span>.<span style="color:#a6e22e">Unmarshal</span>(<span style="color:#a6e22e">msg</span>.<span style="color:#a6e22e">Payload</span>(), <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">data</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">sensor</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">models</span>.<span style="color:#a6e22e">SensorData</span>{
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">DeviceID</span>:    <span style="color:#a6e22e">data</span>[<span style="color:#e6db74">&#34;device_id&#34;</span>].(<span style="color:#66d9ef">string</span>),
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">Temperature</span>: float32(<span style="color:#a6e22e">data</span>[<span style="color:#e6db74">&#34;temperature&#34;</span>].(<span style="color:#66d9ef">float64</span>)),
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">Humidity</span>:    float32(<span style="color:#a6e22e">data</span>[<span style="color:#e6db74">&#34;humidity&#34;</span>].(<span style="color:#66d9ef">float64</span>)),
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">Create</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">sensor</span>)
+</span></span><span style="display:flex;"><span>	})
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">token</span>.<span style="color:#a6e22e">Wait</span>()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><hr>
+<h3 id="3-websocket-선택사항">
+  3) <strong>WebSocket</strong> (선택사항)
+  <a class="anchor" href="#3-websocket-%ec%84%a0%ed%83%9d%ec%82%ac%ed%95%ad">#</a>
+</h3>
+<ul>
+<li>실시간 양방향 통신 필요 시</li>
+<li>예: 서버 → 라즈베리파이로 커맨드 전달 (예: LED 켜짐/꺼짐 명령)</li>
+</ul>
+<hr>
+<h2 id="-3-보안-관련-고려-사항">
+  🔐 3. 보안 관련 고려 사항
+  <a class="anchor" href="#-3-%eb%b3%b4%ec%95%88-%ea%b4%80%eb%a0%a8-%ea%b3%a0%eb%a0%a4-%ec%82%ac%ed%95%ad">#</a>
+</h2>
+<table>
+  <thead>
+      <tr>
+          <th>항목</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>HTTPS</strong></td>
+          <td>반드시 TLS 적용 (<code>Let's Encrypt</code>)</td>
+      </tr>
+      <tr>
+          <td><strong>인증</strong></td>
+          <td>JWT 토큰이나 API Key로 접근 제어</td>
+      </tr>
+      <tr>
+          <td><strong>IP 제한</strong></td>
+          <td>특정 IP(라즈베리파이의 공인 IP)만 접근 허용</td>
+      </tr>
+      <tr>
+          <td><strong>Rate Limiting</strong></td>
+          <td>과다 요청 차단</td>
+      </tr>
+      <tr>
+          <td><strong>로그 기록</strong></td>
+          <td>누가 언제 어떤 데이터를 보냈는지 기록</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="-4-네트워크-설정-주의점">
+  🌐 4. 네트워크 설정 주의점
+  <a class="anchor" href="#-4-%eb%84%a4%ed%8a%b8%ec%9b%8c%ed%81%ac-%ec%84%a4%ec%a0%95-%ec%a3%bc%ec%9d%98%ec%a0%90">#</a>
+</h2>
+<table>
+  <thead>
+      <tr>
+          <th>항목</th>
+          <th>설명</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>공인 IP vs 내부망</strong></td>
+          <td>외부에서 접근 가능해야 함</td>
+      </tr>
+      <tr>
+          <td><strong>방화벽 설정</strong></td>
+          <td>API 포트(<code>80</code>, <code>443</code>), MQTT 포트(<code>1883</code>, <code>8883</code>) 열기</td>
+      </tr>
+      <tr>
+          <td><strong>DDNS</strong></td>
+          <td>공인 IP가 변하는 경우 도메인으로 고정 관리 가능</td>
+      </tr>
+      <tr>
+          <td><strong>NAT 설정</strong></td>
+          <td>라우터에서 포트 포워딩 필요할 수 있음</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="-5-운영-환경-구성-추천">
+  📦 5. 운영 환경 구성 추천
+  <a class="anchor" href="#-5-%ec%9a%b4%ec%98%81-%ed%99%98%ea%b2%bd-%ea%b5%ac%ec%84%b1-%ec%b6%94%ec%b2%9c">#</a>
+</h2>
+<blockquote>
+<p>아래는 Docker + Traefik + Go + MySQL 구성입니다.</p></blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">version</span>: <span style="color:#e6db74">&#39;3&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">services</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">traefik</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">traefik:v2.9</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">command</span>:
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">api.insecure=true</span>
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">providers.docker</span>
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">entrypoints.web.address=:80</span>
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">entrypoints.websecure.address=:443</span>
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">certificatesresolvers.myresolver.acme.tlschallenge</span>
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">certificatesresolvers.myresolver.acme.email=you@example.com</span>
+</span></span><span style="display:flex;"><span>      - --<span style="color:#ae81ff">certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">ports</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;80:80&#34;</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;443:443&#34;</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;8080:8080&#34;</span> <span style="color:#75715e"># Traefik Dashboard</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">/var/run/docker.sock:/var/run/docker.sock</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">./letsencrypt:/letsencrypt</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">api-server</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">build</span>: <span style="color:#ae81ff">.</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">labels</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;traefik.http.routers.api.rule=Host(`api.example.com`)&#34;</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;traefik.http.routers.api.entrypoints=websecure&#34;</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;traefik.http.routers.api.tls.certresolver=myresolver&#34;</span>
+</span></span><span style="display:flex;"><span>      - <span style="color:#e6db74">&#34;traefik.http.services.api.loadbalancer.server.port=8080&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">mysql</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">mysql:8.0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">environment</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">MYSQL_ROOT_PASSWORD</span>: <span style="color:#ae81ff">password</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">MYSQL_DATABASE</span>: <span style="color:#ae81ff">sensordb</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ae81ff">db_data:/var/lib/mysql</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">db_data</span>:
+</span></span></code></pre></div><hr>
+<h2 id="-요약">
+  ✅ 요약
+  <a class="anchor" href="#-%ec%9a%94%ec%95%bd">#</a>
+</h2>
+<table>
+  <thead>
+      <tr>
+          <th>항목</th>
+          <th>추천 방법</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>통신 방식</strong></td>
+          <td>MQTT or HTTP</td>
+      </tr>
+      <tr>
+          <td><strong>데이터 포맷</strong></td>
+          <td>JSON</td>
+      </tr>
+      <tr>
+          <td><strong>보안</strong></td>
+          <td>HTTPS + API Key or JWT</td>
+      </tr>
+      <tr>
+          <td><strong>운영</strong></td>
+          <td>Docker + Traefik + Let&rsquo;s Encrypt</td>
+      </tr>
+      <tr>
+          <td><strong>DB 저장</strong></td>
+          <td>GORM 활용하여 MySQL 등에 저장</td>
+      </tr>
+      <tr>
+          <td><strong>모니터링</strong></td>
+          <td>로그, 대시보드(Traefik 제공), Prometheus 연동도 가능</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<p>필요하다면 아래 내용도 도와드릴게요 😊</p>
+<ul>
+<li>라즈베리파이 센서 연결 방법 (GPIO, I2C 등)</li>
+<li>MQTT Broker(Docker Mosquitto) 설치 가이드</li>
+<li>JWT 기반 인증 추가 방법</li>
+<li>전체 Docker Compose + Go 예제</li>
+</ul>
+<p>어떤 걸 먼저 해볼까요?</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#-기본-개념-라즈베리파이--api-서버-통신-구조">🧱 기본 개념: 라즈베리파이 ↔ API 서버 통신 구조</a></li>
+    <li><a href="#-1-api-서버-설계-방향">✅ 1. API 서버 설계 방향</a></li>
+    <li><a href="#-2-라즈베리파이와-주로-사용하는-통신-방식">📡 2. 라즈베리파이와 주로 사용하는 통신 방식</a>
+      <ul>
+        <li><a href="#1-http-rest-api">1) <strong>HTTP REST API</strong></a></li>
+        <li><a href="#2-mqtt-통신-추천">2) <strong>MQTT 통신 (추천)</strong></a></li>
+        <li><a href="#3-websocket-선택사항">3) <strong>WebSocket</strong> (선택사항)</a></li>
+      </ul>
+    </li>
+    <li><a href="#-3-보안-관련-고려-사항">🔐 3. 보안 관련 고려 사항</a></li>
+    <li><a href="#-4-네트워크-설정-주의점">🌐 4. 네트워크 설정 주의점</a></li>
+    <li><a href="#-5-운영-환경-구성-추천">📦 5. 운영 환경 구성 추천</a></li>
+    <li><a href="#-요약">✅ 요약</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

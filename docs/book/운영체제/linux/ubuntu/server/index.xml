@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Example Site on My New Hugo Site</title><link>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/server/</link><description>Recent content in Example Site on My New Hugo Site</description><generator>Hugo</generator><language>en-us</language><atom:link href="http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/server/index.xml" rel="self" type="application/rss+xml"/><item><title>설정</title><link>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/server/%EC%84%A4%EC%A0%95/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/book/%EC%9A%B4%EC%98%81%EC%B2%B4%EC%A0%9C/linux/ubuntu/server/%EC%84%A4%EC%A0%95/</guid><description>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># /etc/apt/sources.list.d/ubuntu-sources&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>server-1&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># /etc/netplan/50-cloud-init.yaml&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">network&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#f92672">version&lt;/span>: &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#f92672">ethernets&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#f92672">enp0s1&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">dhcp&lt;/span>: &lt;span style="color:#66d9ef">no&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">addresses&lt;/span>: [&lt;span style="color:#ae81ff">192.168.0.100&lt;/span>&lt;span style="color:#ae81ff">/24]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">router&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			- &lt;span style="color:#f92672">to&lt;/span>: &lt;span style="color:#ae81ff">default&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#f92672">via&lt;/span>: &lt;span style="color:#ae81ff">192.168.0.1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">nameservers&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#f92672">addresses&lt;/span>: [&lt;span style="color:#ae81ff">192.168.0.1&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>server-2&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># /etc/netplan/50-cloud-init.yaml&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">network&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#f92672">version&lt;/span>: &lt;span style="color:#ae81ff">2&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#f92672">ethernets&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#f92672">enp0s1&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">dhcp&lt;/span>: &lt;span style="color:#66d9ef">no&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">addresses&lt;/span>: [&lt;span style="color:#ae81ff">192.168.0.200&lt;/span>&lt;span style="color:#ae81ff">/24]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">routes&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			- &lt;span style="color:#f92672">to&lt;/span>: &lt;span style="color:#ae81ff">default&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#f92672">via&lt;/span>: &lt;span style="color:#ae81ff">192.168.0.1&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			&lt;span style="color:#f92672">nameservers&lt;/span>:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#f92672">addresses&lt;/span>: [&lt;span style="color:#ae81ff">192.168.0.1&lt;/span>]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>client&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-yaml" data-lang="yaml">&lt;/code>&lt;/pre>&lt;/div></description></item></channel></rss>
