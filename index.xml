@@ -577,12 +577,6 @@ Gemini 1.5 Flash 002&lt;/p></description></item><item><title>CMakeLists.txt</tit
  CMakeLists.txt
  &lt;a class="anchor" href="#cmakeliststxt">#&lt;/a>
 &lt;/h1>
-&lt;hr>
-&lt;h2 id="description-cmakeliststxt">
- title: CMakeLists.txt
-description: CMakeLists.txt
- &lt;a class="anchor" href="#description-cmakeliststxt">#&lt;/a>
-&lt;/h2>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-CMakeLists.txt" data-lang="CMakeLists.txt">&lt;span style="display:flex;">&lt;span>cmake_minimum_required(&lt;span style="color:#e6db74">VERSION&lt;/span> &lt;span style="color:#e6db74">3.10&lt;/span>)&lt;span style="color:#960050;background-color:#1e0010">
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">&lt;/span>project(&lt;span style="color:#e6db74">MyProject&lt;/span>)&lt;span style="color:#960050;background-color:#1e0010">
 &lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#960050;background-color:#1e0010">
@@ -1019,12 +1013,6 @@ PowerShell에서 실행:&lt;/p>
  xmake.lua
  &lt;a class="anchor" href="#xmakelua">#&lt;/a>
 &lt;/h1>
-&lt;hr>
-&lt;h2 id="description-xmakelua">
- title: xmake.lua
-description: xmake.lua
- &lt;a class="anchor" href="#description-xmakelua">#&lt;/a>
-&lt;/h2>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-lua" data-lang="lua">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">-- 프로젝트 기본 설정&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_project(&lt;span style="color:#e6db74">&amp;#34;MyProject&amp;#34;&lt;/span>)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set_version(&lt;span style="color:#e6db74">&amp;#34;0.0.0&amp;#34;&lt;/span>)
