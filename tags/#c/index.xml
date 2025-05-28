@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>#C on choidaruhan</title><link>http://localhost:1313/tags/%23c/</link><description>Recent content in #C on choidaruhan</description><generator>Hugo</generator><language>ko-kr</language><lastBuildDate>Fri, 18 Apr 2025 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/%23c/index.xml" rel="self" type="application/rss+xml"/><item><title>나만의 프로그래밍 언어</title><link>http://localhost:1313/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/</link><pubDate>Fri, 18 Apr 2025 00:00:00 +0000</pubDate><guid>http://localhost:1313/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/</guid><description>&lt;h1 id="나만의-프로그래밍-언어">
+ 나만의 프로그래밍 언어
+ &lt;a class="anchor" href="#%eb%82%98%eb%a7%8c%ec%9d%98-%ed%94%84%eb%a1%9c%ea%b7%b8%eb%9e%98%eb%b0%8d-%ec%96%b8%ec%96%b4">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="소개">
+ 소개
+ &lt;a class="anchor" href="#%ec%86%8c%ea%b0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-c" data-lang="c">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// C언어
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#include&lt;/span> &lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Hello, World!&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>Hello, World!
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pub main():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return std.out(&amp;#34;Hello, World!&amp;#34;);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>Hello, World!
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="구조체">
+ 구조체
+ &lt;a class="anchor" href="#%ea%b5%ac%ec%a1%b0%ec%b2%b4">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>pub Person{}:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	str name: &amp;#34;이름&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	str phone: &amp;#34;010-1234-5678&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	str email: &amp;#34;example@example.com&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	(name, phone, email): (.name, .phone, .email);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="변수">
+ 변수
+ &lt;a class="anchor" href="#%eb%b3%80%ec%88%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>i4 int: 10; // 4바이트 정수에 숫자 10 할당
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f8 float: 0.1234 // 8바이트 부동소수
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>s string: &amp;#34;test&amp;#34; // 문자열
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>a[6] array: [0, 1, 2, 3, 4, 5] // 배열
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="함수">
+ 함수
+ &lt;a class="anchor" href="#%ed%95%a8%ec%88%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>exam():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return 10;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>exam2(i4 a, i4 b):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	i4 c: a + b;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return c;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="형변환">
+ 형변환
+ &lt;a class="anchor" href="#%ed%98%95%eb%b3%80%ed%99%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>to: lib.std.to;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to.int(&amp;#39;10&amp;#39;); // &amp;#39;10&amp;#39; -&amp;gt; 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to.str(10); // 10 -&amp;gt; &amp;#39;10&amp;#39;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="반환-타입">
+ 반환 타입
+ &lt;a class="anchor" href="#%eb%b0%98%ed%99%98-%ed%83%80%ec%9e%85">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>func test(int a, int b) int:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return a + b;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="함수-선언-형식">
+ 함수 선언 형식
+ &lt;a class="anchor" href="#%ed%95%a8%ec%88%98-%ec%84%a0%ec%96%b8-%ed%98%95%ec%8b%9d">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>hello() void:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>    print(&amp;#34;Hello, World!&amp;#34;);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="기본-라이브러리">
+ 기본 라이브러리
+ &lt;a class="anchor" href="#%ea%b8%b0%eb%b3%b8-%eb%9d%bc%ec%9d%b4%eb%b8%8c%eb%9f%ac%eb%a6%ac">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="map">
+ Map
+ &lt;a class="anchor" href="#map">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>map: std.map;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>func main:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	map m;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	m: &amp;#34;key1&amp;#34;: &amp;#34;value1&amp;#34;, &amp;#34;key2&amp;#34;: &amp;#34;value2&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>map m;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>m.key: &amp;#34;name&amp;#34;; // {&amp;#34;name&amp;#34;:&amp;#34;&amp;#34;}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>m.value: &amp;#34;smith&amp;#34;; // {&amp;#34;name&amp;#34;:&amp;#34;smith&amp;#34;}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="set">
+ Set
+ &lt;a class="anchor" href="#set">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set: std.set;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>func main:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	set s;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	s: &amp;#34;1&amp;#34;, &amp;#34;2&amp;#34;, &amp;#34;3&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="list">
+ List
+ &lt;a class="anchor" href="#list">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>list: std.list;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>func main:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	list l;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	l: &amp;#34;a&amp;#34;, &amp;#34;b&amp;#34;, &amp;#34;c&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>나만의 프로그래밍 언어</title><link>http://localhost:1313/posts/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/</link><pubDate>Fri, 18 Apr 2025 00:00:00 +0000</pubDate><guid>http://localhost:1313/posts/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/</guid><description>&lt;h1 id="나만의-프로그래밍-언어">
+ 나만의 프로그래밍 언어
+ &lt;a class="anchor" href="#%eb%82%98%eb%a7%8c%ec%9d%98-%ed%94%84%eb%a1%9c%ea%b7%b8%eb%9e%98%eb%b0%8d-%ec%96%b8%ec%96%b4">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="소개">
+ 소개
+ &lt;a class="anchor" href="#%ec%86%8c%ea%b0%9c">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-c" data-lang="c">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// C언어
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#include&lt;/span> &lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">printf&lt;/span>(&lt;span style="color:#e6db74">&amp;#34;Hello, World!&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>Hello, World!
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>pub main():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return std.out(&amp;#34;Hello, World!&amp;#34;);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>Hello, World!
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="구조체">
+ 구조체
+ &lt;a class="anchor" href="#%ea%b5%ac%ec%a1%b0%ec%b2%b4">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>pub Person{}:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	str name: &amp;#34;이름&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	str phone: &amp;#34;010-1234-5678&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	str email: &amp;#34;example@example.com&amp;#34;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	(name, phone, email): (.name, .phone, .email);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="변수">
+ 변수
+ &lt;a class="anchor" href="#%eb%b3%80%ec%88%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>i4 int: 10; // 4바이트 정수에 숫자 10 할당
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>f8 float: 0.1234 // 8바이트 부동소수
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>s string: &amp;#34;test&amp;#34; // 문자열
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>a[6] array: [0, 1, 2, 3, 4, 5] // 배열
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="함수">
+ 함수
+ &lt;a class="anchor" href="#%ed%95%a8%ec%88%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>exam():
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return 10;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>exam2(i4 a, i4 b):
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	i4 c: a + b;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return c;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="형변환">
+ 형변환
+ &lt;a class="anchor" href="#%ed%98%95%eb%b3%80%ed%99%98">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>to: lib.std.to;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to.int(&amp;#39;10&amp;#39;); // &amp;#39;10&amp;#39; -&amp;gt; 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>to.str(10); // 10 -&amp;gt; &amp;#39;10&amp;#39;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="반환-타입">
+ 반환 타입
+ &lt;a class="anchor" href="#%eb%b0%98%ed%99%98-%ed%83%80%ec%9e%85">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>func test(int a, int b) int:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	return a + b;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="함수-선언-형식">
+ 함수 선언 형식
+ &lt;a class="anchor" href="#%ed%95%a8%ec%88%98-%ec%84%a0%ec%96%b8-%ed%98%95%ec%8b%9d">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>hello() void:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>    print(&amp;#34;Hello, World!&amp;#34;);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="기본-라이브러리">
+ 기본 라이브러리
+ &lt;a class="anchor" href="#%ea%b8%b0%eb%b3%b8-%eb%9d%bc%ec%9d%b4%eb%b8%8c%eb%9f%ac%eb%a6%ac">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="map">
+ Map
+ &lt;a class="anchor" href="#map">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>map: std.map;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>func main:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	map m;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	m: &amp;#34;key1&amp;#34;: &amp;#34;value1&amp;#34;, &amp;#34;key2&amp;#34;: &amp;#34;value2&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>map m;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>m.key: &amp;#34;name&amp;#34;; // {&amp;#34;name&amp;#34;:&amp;#34;&amp;#34;}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>m.value: &amp;#34;smith&amp;#34;; // {&amp;#34;name&amp;#34;:&amp;#34;smith&amp;#34;}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="set">
+ Set
+ &lt;a class="anchor" href="#set">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>set: std.set;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>func main:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	set s;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	s: &amp;#34;1&amp;#34;, &amp;#34;2&amp;#34;, &amp;#34;3&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="list">
+ List
+ &lt;a class="anchor" href="#list">#&lt;/a>
+&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>std: lib.std;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>list: std.list;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>func main:
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	list l;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	l: &amp;#34;a&amp;#34;, &amp;#34;b&amp;#34;, &amp;#34;c&amp;#34;;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item></channel></rss>

@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="ko-kr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  C init.bat
+  #
+
+@echo off
+setlocal enabledelayedexpansion
+
+echo ==================================
+echo C 프로젝트 빌드 시스템 초기화
+echo ==================================
+echo.
+
+:: 프로젝트 이름 입력받기
+set /p PROJECT_NAME=&#34;프로젝트 이름을 입력하세요 (기본값: MyProject): &#34;
+if &#34;!PROJECT_NAME!&#34;==&#34;&#34; set PROJECT_NAME=MyProject
+
+:: VS Code 폴더 생성
+mkdir .vscode 2&gt;nul
+
+:: 필요한 디렉토리 확인 및 생성
+echo [1/8] 디렉토리 구조 생성 중...
+if not exist src mkdir src
+if not exist src\lib mkdir src\lib
+if not exist src\main.c (
+    echo #include ^&lt;stdio.h^&gt; &gt; src\main.c
+    echo. &gt;&gt; src\main.c
+    echo int main(void) { &gt;&gt; src\main.c
+    echo     printf(&#34;Hello, World!\n&#34;); &gt;&gt; src\main.c
+    echo     return 0; &gt;&gt; src\main.c
+    echo } &gt;&gt; src\main.c
+)
+
+:: CMakeLists.txt 생성
+echo [2/8] CMakeLists.txt 생성 중...
+echo cmake_minimum_required(VERSION 3.15) &gt; CMakeLists.txt
+echo project(%PROJECT_NAME% C CXX)  # C와 C&#43;&#43; 모두 지원 &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 빌드 산출물 디렉토리 설정 &gt;&gt; CMakeLists.txt
+echo set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) &gt;&gt; CMakeLists.txt
+echo set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) &gt;&gt; CMakeLists.txt
+echo set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 빌드 타입이 지정되지 않은 경우 기본값 설정 &gt;&gt; CMakeLists.txt
+echo if(NOT CMAKE_BUILD_TYPE) &gt;&gt; CMakeLists.txt
+echo   set(CMAKE_BUILD_TYPE Debug) &gt;&gt; CMakeLists.txt
+echo endif() &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 소스 디렉토리 추가 &gt;&gt; CMakeLists.txt
+echo include_directories(src) &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # Conan 패키지 찾기 &gt;&gt; CMakeLists.txt
+echo find_package(ZLIB CONFIG REQUIRED) &gt;&gt; CMakeLists.txt
+echo find_package(GTest CONFIG REQUIRED) &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 모든 C 소스 및 헤더 파일 자동 수집 &gt;&gt; CMakeLists.txt
+echo file(GLOB_RECURSE SOURCES &#34;src/*.c&#34;) &gt;&gt; CMakeLists.txt
+echo file(GLOB_RECURSE HEADERS &#34;src/*.h&#34;) &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 수집된 파일 목록 출력 (디버깅용) &gt;&gt; CMakeLists.txt
+echo message(STATUS &#34;Found source files: ${SOURCES}&#34;) &gt;&gt; CMakeLists.txt
+echo message(STATUS &#34;Found header files: ${HEADERS}&#34;) &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 실행 파일 생성 &gt;&gt; CMakeLists.txt
+echo add_executable(%PROJECT_NAME% ${SOURCES}) &gt;&gt; CMakeLists.txt
+echo target_link_libraries(%PROJECT_NAME% PRIVATE ZLIB::ZLIB GTest::gtest GTest::gtest_main) &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 컴파일러 경고 처리 &gt;&gt; CMakeLists.txt
+echo if(MSVC) &gt;&gt; CMakeLists.txt
+echo     # Windows에서 안전하지 않은 함수 경고 무시 옵션 추가 &gt;&gt; CMakeLists.txt
+echo     target_compile_definitions(%PROJECT_NAME% PRIVATE _CRT_SECURE_NO_WARNINGS) &gt;&gt; CMakeLists.txt
+echo     # 경고 레벨 설정 &gt;&gt; CMakeLists.txt
+echo     target_compile_options(%PROJECT_NAME% PRIVATE /W4) &gt;&gt; CMakeLists.txt
+echo else() &gt;&gt; CMakeLists.txt
+echo     target_compile_options(%PROJECT_NAME% PRIVATE -Wall -Wextra) &gt;&gt; CMakeLists.txt
+echo endif() &gt;&gt; CMakeLists.txt
+echo. &gt;&gt; CMakeLists.txt
+echo # 소스 그룹 생성 (IDE에서 폴더 구조 유지) &gt;&gt; CMakeLists.txt
+echo source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX &#34;Source Files&#34; FILES ${SOURCES}) &gt;&gt; CMakeLists.txt
+echo source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX &#34;Header Files&#34; FILES ${HEADERS}) &gt;&gt; CMakeLists.txt
+
+:: conanfile.txt 생성
+echo [3/8] conanfile.txt 생성 중...
+echo [requires] &gt; conanfile.txt
+echo zlib/1.2.11 &gt;&gt; conanfile.txt
+echo gtest/1.10.0 &gt;&gt; conanfile.txt
+echo. &gt;&gt; conanfile.txt
+echo [generators] &gt;&gt; conanfile.txt
+echo CMakeDeps &gt;&gt; conanfile.txt
+echo CMakeToolchain &gt;&gt; conanfile.txt
+echo. &gt;&gt; conanfile.txt
+echo [options] &gt;&gt; conanfile.txt
+echo zlib/*:shared=False &gt;&gt; conanfile.txt
+echo gtest/*:shared=False &gt;&gt; conanfile.txt
+echo. &gt;&gt; conanfile.txt
+echo [imports] &gt;&gt; conanfile.txt
+echo bin, *.dll -^&gt; ./bin &gt;&gt; conanfile.txt
+echo lib, *.dylib* -^&gt; ./bin &gt;&gt; conanfile.txt
+echo lib, *.so* -^&gt; ./bin &gt;&gt; conanfile.txt
+
+:: build.bat 생성
+echo [4/8] build.bat 생성 중...
+echo @echo off &gt; build.bat
+echo setlocal &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: 빌드 타입 설정 (기본값: Debug) &gt;&gt; build.bat
+echo set BUILD_TYPE=Debug &gt;&gt; build.bat
+echo if not &#34;%%~1&#34;==&#34;&#34; set BUILD_TYPE=%%~1 &gt;&gt; build.bat
+echo echo Building in %%BUILD_TYPE%% mode &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: 빌드 디렉토리 설정 &gt;&gt; build.bat
+echo set BUILD_DIR=build &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: 빌드 디렉토리 생성 &gt;&gt; build.bat
+echo if not exist %%BUILD_DIR%% mkdir %%BUILD_DIR%% &gt;&gt; build.bat
+echo cd %%BUILD_DIR%% &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: Conan 설정 및 종속성 설치 (출력 폴더 명시적 지정) &gt;&gt; build.bat
+echo conan install .. --build=missing -s build_type=%%BUILD_TYPE%% -g CMakeDeps -g CMakeToolchain --output-folder=. &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: CMake 구성 (생성된 Conan 툴체인 파일 명시적 지정) &gt;&gt; build.bat
+echo cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=%%BUILD_TYPE%% &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: 빌드 실행 &gt;&gt; build.bat
+echo cmake --build . --config %%BUILD_TYPE%% &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: 실행 파일 경로 출력 &gt;&gt; build.bat
+echo echo Build completed. Executable is at: %%CD%%\bin\%%BUILD_TYPE%%\%PROJECT_NAME%.exe &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo :: 원래 디렉토리로 돌아가기 &gt;&gt; build.bat
+echo cd .. &gt;&gt; build.bat
+echo. &gt;&gt; build.bat
+echo endlocal &gt;&gt; build.bat
+
+:: run.bat 생성
+echo [5/8] run.bat 생성 중...
+echo @echo off &gt; run.bat
+echo setlocal &gt;&gt; run.bat
+echo. &gt;&gt; run.bat
+echo :: 빌드 타입 설정 (기본값: Debug) &gt;&gt; run.bat
+echo set BUILD_TYPE=Debug &gt;&gt; run.bat
+echo if not &#34;%%~1&#34;==&#34;&#34; set BUILD_TYPE=%%~1 &gt;&gt; run.bat
+echo. &gt;&gt; run.bat
+echo :: 실행 파일 경로 &gt;&gt; run.bat
+echo set EXECUTABLE_PATH=build\bin\%%BUILD_TYPE%%\%PROJECT_NAME%.exe &gt;&gt; run.bat
+echo. &gt;&gt; run.bat
+echo :: 실행 파일 존재 확인 &gt;&gt; run.bat
+echo if not exist %%EXECUTABLE_PATH%% ( &gt;&gt; run.bat
+echo     echo Error: Executable not found at %%EXECUTABLE_PATH%%. &gt;&gt; run.bat
+echo     echo Please run build.bat first. &gt;&gt; run.bat
+echo     exit /b 1 &gt;&gt; run.bat
+echo ) &gt;&gt; run.bat
+echo. &gt;&gt; run.bat
+echo :: 실행 파일 실행 &gt;&gt; run.bat
+echo echo Running %%EXECUTABLE_PATH%%... &gt;&gt; run.bat
+echo %%EXECUTABLE_PATH%% %%2 %%3 %%4 %%5 %%6 %%7 %%8 %%9 &gt;&gt; run.bat
+echo. &gt;&gt; run.bat
+echo endlocal &gt;&gt; run.bat
+
+:: clean.bat 생성
+echo [6/8] clean.bat 생성 중...
+echo @echo off &gt; clean.bat
+echo echo Cleaning build directory... &gt;&gt; clean.bat
+echo. &gt;&gt; clean.bat
+echo if exist build ( &gt;&gt; clean.bat
+echo     rd /s /q build &gt;&gt; clean.bat
+echo     echo Build directory removed successfully. &gt;&gt; clean.bat
+echo ) else ( &gt;&gt; clean.bat
+echo     echo No build directory found. &gt;&gt; clean.bat
+echo ) &gt;&gt; clean.bat
+
+:: clean_all.bat 생성
+echo [7/8] clean_all.bat 생성 중...
+echo @echo off &gt; clean_all.bat
+echo echo Performing complete cleanup... &gt;&gt; clean_all.bat
+echo. &gt;&gt; clean_all.bat
+echo :: 빌드 디렉토리 삭제 &gt;&gt; clean_all.bat
+echo if exist build ( &gt;&gt; clean_all.bat
+echo     rd /s /q build &gt;&gt; clean_all.bat
+echo     echo Build directory removed. &gt;&gt; clean_all.bat
+echo ) &gt;&gt; clean_all.bat
+echo. &gt;&gt; clean_all.bat
+echo :: 프로젝트 루트의 Conan 생성 파일 삭제 &gt;&gt; clean_all.bat
+echo if exist conan_toolchain.cmake del /f /q conan_toolchain.cmake &gt;&gt; clean_all.bat
+echo if exist conaninfo.txt del /f /q conaninfo.txt &gt;&gt; clean_all.bat
+echo if exist conanbuildinfo.* del /f /q conanbuildinfo.* &gt;&gt; clean_all.bat
+echo if exist conan.lock del /f /q conan.lock &gt;&gt; clean_all.bat
+echo if exist CMakeUserPresets.json del /f /q CMakeUserPresets.json &gt;&gt; clean_all.bat
+echo. &gt;&gt; clean_all.bat
+echo :: 기타 VS 임시 파일 삭제 &gt;&gt; clean_all.bat
+echo if exist .vs rd /s /q .vs &gt;&gt; clean_all.bat
+echo if exist *.user del /f /q *.user &gt;&gt; clean_all.bat
+echo if exist *.sln del /f /q *.sln &gt;&gt; clean_all.bat
+echo if exist *.vcxproj* del /f /q *.vcxproj* &gt;&gt; clean_all.bat
+echo. &gt;&gt; clean_all.bat
+echo echo Cleanup completed. &gt;&gt; clean_all.bat
+
+:: VS Code 설정 파일 생성
+echo [8/8] VS Code 설정 파일 생성 중...
+
+:: tasks.json
+echo { &gt; .vscode\tasks.json
+echo     &#34;version&#34;: &#34;2.0.0&#34;, &gt;&gt; .vscode\tasks.json
+echo     &#34;tasks&#34;: [ &gt;&gt; .vscode\tasks.json
+echo         { &gt;&gt; .vscode\tasks.json
+echo             &#34;label&#34;: &#34;build&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;command&#34;: &#34;build.bat Debug&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;group&#34;: { &gt;&gt; .vscode\tasks.json
+echo                 &#34;kind&#34;: &#34;build&#34;, &gt;&gt; .vscode\tasks.json
+echo                 &#34;isDefault&#34;: true &gt;&gt; .vscode\tasks.json
+echo             }, &gt;&gt; .vscode\tasks.json
+echo             &#34;problemMatcher&#34;: [&#34;$msCompile&#34;] &gt;&gt; .vscode\tasks.json
+echo         }, &gt;&gt; .vscode\tasks.json
+echo         { &gt;&gt; .vscode\tasks.json
+echo             &#34;label&#34;: &#34;build-release&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;command&#34;: &#34;build.bat Release&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;group&#34;: &#34;build&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;problemMatcher&#34;: [&#34;$msCompile&#34;] &gt;&gt; .vscode\tasks.json
+echo         }, &gt;&gt; .vscode\tasks.json
+echo         { &gt;&gt; .vscode\tasks.json
+echo             &#34;label&#34;: &#34;run&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;command&#34;: &#34;run.bat&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;dependsOn&#34;: [&#34;build&#34;], &gt;&gt; .vscode\tasks.json
+echo             &#34;group&#34;: { &gt;&gt; .vscode\tasks.json
+echo                 &#34;kind&#34;: &#34;test&#34;, &gt;&gt; .vscode\tasks.json
+echo                 &#34;isDefault&#34;: true &gt;&gt; .vscode\tasks.json
+echo             } &gt;&gt; .vscode\tasks.json
+echo         }, &gt;&gt; .vscode\tasks.json
+echo         { &gt;&gt; .vscode\tasks.json
+echo             &#34;label&#34;: &#34;clean&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;command&#34;: &#34;clean.bat&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;problemMatcher&#34;: [] &gt;&gt; .vscode\tasks.json
+echo         }, &gt;&gt; .vscode\tasks.json
+echo         { &gt;&gt; .vscode\tasks.json
+echo             &#34;label&#34;: &#34;clean-all&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;command&#34;: &#34;clean_all.bat&#34;, &gt;&gt; .vscode\tasks.json
+echo             &#34;problemMatcher&#34;: [] &gt;&gt; .vscode\tasks.json
+echo         } &gt;&gt; .vscode\tasks.json
+echo     ] &gt;&gt; .vscode\tasks.json
+echo } &gt;&gt; .vscode\tasks.json
+
+:: launch.json
+echo { &gt; .vscode\launch.json
+echo     &#34;version&#34;: &#34;0.2.0&#34;, &gt;&gt; .vscode\launch.json
+echo     &#34;configurations&#34;: [ &gt;&gt; .vscode\launch.json
+echo         { &gt;&gt; .vscode\launch.json
+echo             &#34;name&#34;: &#34;Debug&#34;, &gt;&gt; .vscode\launch.json
+echo             &#34;type&#34;: &#34;cppvsdbg&#34;, &gt;&gt; .vscode\launch.json
+echo             &#34;request&#34;: &#34;launch&#34;, &gt;&gt; .vscode\launch.json
+echo             &#34;program&#34;: &#34;${workspaceFolder}\\build\\bin\\Debug\\%PROJECT_NAME%.exe&#34;, &gt;&gt; .vscode\launch.json
+echo             &#34;args&#34;: [], &gt;&gt; .vscode\launch.json
+echo             &#34;stopAtEntry&#34;: false, &gt;&gt; .vscode\launch.json
+echo             &#34;cwd&#34;: &#34;${workspaceFolder}&#34;, &gt;&gt; .vscode\launch.json
+echo             &#34;environment&#34;: [], &gt;&gt; .vscode\launch.json
+echo             &#34;externalConsole&#34;: false, &gt;&gt; .vscode\launch.json
+echo             &#34;preLaunchTask&#34;: &#34;build&#34; &gt;&gt; .vscode\launch.json
+echo         } &gt;&gt; .vscode\launch.json
+echo     ] &gt;&gt; .vscode\launch.json
+echo } &gt;&gt; .vscode\launch.json
+
+:: settings.json
+echo { &gt; .vscode\settings.json
+echo     &#34;cmake.configureOnOpen&#34;: true, &gt;&gt; .vscode\settings.json
+echo     &#34;cmake.buildDirectory&#34;: &#34;${workspaceFolder}/build&#34;, &gt;&gt; .vscode\settings.json
+echo     &#34;cmake.defaultVariants&#34;: { &gt;&gt; .vscode\settings.json
+echo         &#34;buildType&#34;: { &gt;&gt; .vscode\settings.json
+echo             &#34;default&#34;: &#34;debug&#34;, &gt;&gt; .vscode\settings.json
+echo             &#34;description&#34;: &#34;The build type.&#34;, &gt;&gt; .vscode\settings.json
+echo             &#34;choices&#34;: { &gt;&gt; .vscode\settings.json
+echo                 &#34;debug&#34;: { &gt;&gt; .vscode\settings.json
+echo                     &#34;short&#34;: &#34;Debug&#34;, &gt;&gt; .vscode\settings.json
+echo                     &#34;long&#34;: &#34;Debug build type&#34;, &gt;&gt; .vscode\settings.json
+echo                     &#34;buildType&#34;: &#34;Debug&#34; &gt;&gt; .vscode\settings.json
+echo                 }, &gt;&gt; .vscode\settings.json
+echo                 &#34;release&#34;: { &gt;&gt; .vscode\settings.json
+echo                     &#34;short&#34;: &#34;Release&#34;, &gt;&gt; .vscode\settings.json
+echo                     &#34;long&#34;: &#34;Release build type&#34;, &gt;&gt; .vscode\settings.json
+echo                     &#34;buildType&#34;: &#34;Release&#34; &gt;&gt; .vscode\settings.json
+echo                 } &gt;&gt; .vscode\settings.json
+echo             } &gt;&gt; .vscode\settings.json
+echo         } &gt;&gt; .vscode\settings.json
+echo     }, &gt;&gt; .vscode\settings.json
+echo     &#34;files.associations&#34;: { &gt;&gt; .vscode\settings.json
+echo         &#34;*.h&#34;: &#34;c&#34; &gt;&gt; .vscode\settings.json
+echo     }, &gt;&gt; .vscode\settings.json
+echo     &#34;cmake.sourceDirectory&#34;: &#34;${workspaceFolder}&#34; &gt;&gt; .vscode\settings.json
+echo } &gt;&gt; .vscode\settings.json
+
+:: .gitignore 생성
+echo # 빌드 디렉토리 &gt; .gitignore
+echo /build/ &gt;&gt; .gitignore
+echo /bin/ &gt;&gt; .gitignore
+echo /lib/ &gt;&gt; .gitignore
+echo. &gt;&gt; .gitignore
+echo # Visual Studio 파일 &gt;&gt; .gitignore
+echo .vs/ &gt;&gt; .gitignore
+echo *.user &gt;&gt; .gitignore
+echo *.suo &gt;&gt; .gitignore
+echo *.sln &gt;&gt; .gitignore
+echo *.vcxproj &gt;&gt; .gitignore
+echo *.vcxproj.filters &gt;&gt; .gitignore
+echo *.vcxproj.user &gt;&gt; .gitignore
+echo. &gt;&gt; .gitignore
+echo # Conan 파일 &gt;&gt; .gitignore
+echo conanbuildinfo.* &gt;&gt; .gitignore
+echo conaninfo.txt &gt;&gt; .gitignore
+echo conan.lock &gt;&gt; .gitignore
+echo conan_toolchain.cmake &gt;&gt; .gitignore
+echo CMakeUserPresets.json &gt;&gt; .gitignore
+echo. &gt;&gt; .gitignore
+echo # 임시 파일 &gt;&gt; .gitignore
+echo *.tmp &gt;&gt; .gitignore
+echo *.log &gt;&gt; .gitignore
+
+echo.
+echo ===============================================
+echo 초기화가 완료되었습니다!
+echo 프로젝트 이름: %PROJECT_NAME%
+echo.
+echo 다음 단계:
+echo 1. VS Code에서 프로젝트 열기
+echo 2. &#39;build.bat&#39; 실행하여 프로젝트 빌드하기
+echo 3. &#39;run.bat&#39; 실행하여 프로그램 실행하기
+echo 4. VS Code에서 F5 키로 디버깅 시작하기
+echo ===============================================
+
+endlocal
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://baboyiban.github.io/docs/c-init.bat/">
+  <meta property="og:site_name" content="choidaruhan">
+  <meta property="og:title" content="C init.bat">
+  <meta property="og:description" content="C init.bat # @echo off setlocal enabledelayedexpansion echo ================================== echo C 프로젝트 빌드 시스템 초기화 echo ================================== echo. :: 프로젝트 이름 입력받기 set /p PROJECT_NAME=&#34;프로젝트 이름을 입력하세요 (기본값: MyProject): &#34; if &#34;!PROJECT_NAME!&#34;==&#34;&#34; set PROJECT_NAME=MyProject :: VS Code 폴더 생성 mkdir .vscode 2&gt;nul :: 필요한 디렉토리 확인 및 생성 echo [1/8] 디렉토리 구조 생성 중... if not exist src mkdir src if not exist src\lib mkdir src\lib if not exist src\main.c ( echo #include ^&lt;stdio.h^&gt; &gt; src\main.c echo. &gt;&gt; src\main.c echo int main(void) { &gt;&gt; src\main.c echo printf(&#34;Hello, World!\n&#34;); &gt;&gt; src\main.c echo return 0; &gt;&gt; src\main.c echo } &gt;&gt; src\main.c ) :: CMakeLists.txt 생성 echo [2/8] CMakeLists.txt 생성 중... echo cmake_minimum_required(VERSION 3.15) &gt; CMakeLists.txt echo project(%PROJECT_NAME% C CXX) # C와 C&#43;&#43; 모두 지원 &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 빌드 산출물 디렉토리 설정 &gt;&gt; CMakeLists.txt echo set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) &gt;&gt; CMakeLists.txt echo set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) &gt;&gt; CMakeLists.txt echo set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 빌드 타입이 지정되지 않은 경우 기본값 설정 &gt;&gt; CMakeLists.txt echo if(NOT CMAKE_BUILD_TYPE) &gt;&gt; CMakeLists.txt echo set(CMAKE_BUILD_TYPE Debug) &gt;&gt; CMakeLists.txt echo endif() &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 소스 디렉토리 추가 &gt;&gt; CMakeLists.txt echo include_directories(src) &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # Conan 패키지 찾기 &gt;&gt; CMakeLists.txt echo find_package(ZLIB CONFIG REQUIRED) &gt;&gt; CMakeLists.txt echo find_package(GTest CONFIG REQUIRED) &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 모든 C 소스 및 헤더 파일 자동 수집 &gt;&gt; CMakeLists.txt echo file(GLOB_RECURSE SOURCES &#34;src/*.c&#34;) &gt;&gt; CMakeLists.txt echo file(GLOB_RECURSE HEADERS &#34;src/*.h&#34;) &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 수집된 파일 목록 출력 (디버깅용) &gt;&gt; CMakeLists.txt echo message(STATUS &#34;Found source files: ${SOURCES}&#34;) &gt;&gt; CMakeLists.txt echo message(STATUS &#34;Found header files: ${HEADERS}&#34;) &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 실행 파일 생성 &gt;&gt; CMakeLists.txt echo add_executable(%PROJECT_NAME% ${SOURCES}) &gt;&gt; CMakeLists.txt echo target_link_libraries(%PROJECT_NAME% PRIVATE ZLIB::ZLIB GTest::gtest GTest::gtest_main) &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 컴파일러 경고 처리 &gt;&gt; CMakeLists.txt echo if(MSVC) &gt;&gt; CMakeLists.txt echo # Windows에서 안전하지 않은 함수 경고 무시 옵션 추가 &gt;&gt; CMakeLists.txt echo target_compile_definitions(%PROJECT_NAME% PRIVATE _CRT_SECURE_NO_WARNINGS) &gt;&gt; CMakeLists.txt echo # 경고 레벨 설정 &gt;&gt; CMakeLists.txt echo target_compile_options(%PROJECT_NAME% PRIVATE /W4) &gt;&gt; CMakeLists.txt echo else() &gt;&gt; CMakeLists.txt echo target_compile_options(%PROJECT_NAME% PRIVATE -Wall -Wextra) &gt;&gt; CMakeLists.txt echo endif() &gt;&gt; CMakeLists.txt echo. &gt;&gt; CMakeLists.txt echo # 소스 그룹 생성 (IDE에서 폴더 구조 유지) &gt;&gt; CMakeLists.txt echo source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX &#34;Source Files&#34; FILES ${SOURCES}) &gt;&gt; CMakeLists.txt echo source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX &#34;Header Files&#34; FILES ${HEADERS}) &gt;&gt; CMakeLists.txt :: conanfile.txt 생성 echo [3/8] conanfile.txt 생성 중... echo [requires] &gt; conanfile.txt echo zlib/1.2.11 &gt;&gt; conanfile.txt echo gtest/1.10.0 &gt;&gt; conanfile.txt echo. &gt;&gt; conanfile.txt echo [generators] &gt;&gt; conanfile.txt echo CMakeDeps &gt;&gt; conanfile.txt echo CMakeToolchain &gt;&gt; conanfile.txt echo. &gt;&gt; conanfile.txt echo [options] &gt;&gt; conanfile.txt echo zlib/*:shared=False &gt;&gt; conanfile.txt echo gtest/*:shared=False &gt;&gt; conanfile.txt echo. &gt;&gt; conanfile.txt echo [imports] &gt;&gt; conanfile.txt echo bin, *.dll -^&gt; ./bin &gt;&gt; conanfile.txt echo lib, *.dylib* -^&gt; ./bin &gt;&gt; conanfile.txt echo lib, *.so* -^&gt; ./bin &gt;&gt; conanfile.txt :: build.bat 생성 echo [4/8] build.bat 생성 중... echo @echo off &gt; build.bat echo setlocal &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: 빌드 타입 설정 (기본값: Debug) &gt;&gt; build.bat echo set BUILD_TYPE=Debug &gt;&gt; build.bat echo if not &#34;%%~1&#34;==&#34;&#34; set BUILD_TYPE=%%~1 &gt;&gt; build.bat echo echo Building in %%BUILD_TYPE%% mode &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: 빌드 디렉토리 설정 &gt;&gt; build.bat echo set BUILD_DIR=build &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: 빌드 디렉토리 생성 &gt;&gt; build.bat echo if not exist %%BUILD_DIR%% mkdir %%BUILD_DIR%% &gt;&gt; build.bat echo cd %%BUILD_DIR%% &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: Conan 설정 및 종속성 설치 (출력 폴더 명시적 지정) &gt;&gt; build.bat echo conan install .. --build=missing -s build_type=%%BUILD_TYPE%% -g CMakeDeps -g CMakeToolchain --output-folder=. &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: CMake 구성 (생성된 Conan 툴체인 파일 명시적 지정) &gt;&gt; build.bat echo cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=%%BUILD_TYPE%% &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: 빌드 실행 &gt;&gt; build.bat echo cmake --build . --config %%BUILD_TYPE%% &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: 실행 파일 경로 출력 &gt;&gt; build.bat echo echo Build completed. Executable is at: %%CD%%\bin\%%BUILD_TYPE%%\%PROJECT_NAME%.exe &gt;&gt; build.bat echo. &gt;&gt; build.bat echo :: 원래 디렉토리로 돌아가기 &gt;&gt; build.bat echo cd .. &gt;&gt; build.bat echo. &gt;&gt; build.bat echo endlocal &gt;&gt; build.bat :: run.bat 생성 echo [5/8] run.bat 생성 중... echo @echo off &gt; run.bat echo setlocal &gt;&gt; run.bat echo. &gt;&gt; run.bat echo :: 빌드 타입 설정 (기본값: Debug) &gt;&gt; run.bat echo set BUILD_TYPE=Debug &gt;&gt; run.bat echo if not &#34;%%~1&#34;==&#34;&#34; set BUILD_TYPE=%%~1 &gt;&gt; run.bat echo. &gt;&gt; run.bat echo :: 실행 파일 경로 &gt;&gt; run.bat echo set EXECUTABLE_PATH=build\bin\%%BUILD_TYPE%%\%PROJECT_NAME%.exe &gt;&gt; run.bat echo. &gt;&gt; run.bat echo :: 실행 파일 존재 확인 &gt;&gt; run.bat echo if not exist %%EXECUTABLE_PATH%% ( &gt;&gt; run.bat echo echo Error: Executable not found at %%EXECUTABLE_PATH%%. &gt;&gt; run.bat echo echo Please run build.bat first. &gt;&gt; run.bat echo exit /b 1 &gt;&gt; run.bat echo ) &gt;&gt; run.bat echo. &gt;&gt; run.bat echo :: 실행 파일 실행 &gt;&gt; run.bat echo echo Running %%EXECUTABLE_PATH%%... &gt;&gt; run.bat echo %%EXECUTABLE_PATH%% %%2 %%3 %%4 %%5 %%6 %%7 %%8 %%9 &gt;&gt; run.bat echo. &gt;&gt; run.bat echo endlocal &gt;&gt; run.bat :: clean.bat 생성 echo [6/8] clean.bat 생성 중... echo @echo off &gt; clean.bat echo echo Cleaning build directory... &gt;&gt; clean.bat echo. &gt;&gt; clean.bat echo if exist build ( &gt;&gt; clean.bat echo rd /s /q build &gt;&gt; clean.bat echo echo Build directory removed successfully. &gt;&gt; clean.bat echo ) else ( &gt;&gt; clean.bat echo echo No build directory found. &gt;&gt; clean.bat echo ) &gt;&gt; clean.bat :: clean_all.bat 생성 echo [7/8] clean_all.bat 생성 중... echo @echo off &gt; clean_all.bat echo echo Performing complete cleanup... &gt;&gt; clean_all.bat echo. &gt;&gt; clean_all.bat echo :: 빌드 디렉토리 삭제 &gt;&gt; clean_all.bat echo if exist build ( &gt;&gt; clean_all.bat echo rd /s /q build &gt;&gt; clean_all.bat echo echo Build directory removed. &gt;&gt; clean_all.bat echo ) &gt;&gt; clean_all.bat echo. &gt;&gt; clean_all.bat echo :: 프로젝트 루트의 Conan 생성 파일 삭제 &gt;&gt; clean_all.bat echo if exist conan_toolchain.cmake del /f /q conan_toolchain.cmake &gt;&gt; clean_all.bat echo if exist conaninfo.txt del /f /q conaninfo.txt &gt;&gt; clean_all.bat echo if exist conanbuildinfo.* del /f /q conanbuildinfo.* &gt;&gt; clean_all.bat echo if exist conan.lock del /f /q conan.lock &gt;&gt; clean_all.bat echo if exist CMakeUserPresets.json del /f /q CMakeUserPresets.json &gt;&gt; clean_all.bat echo. &gt;&gt; clean_all.bat echo :: 기타 VS 임시 파일 삭제 &gt;&gt; clean_all.bat echo if exist .vs rd /s /q .vs &gt;&gt; clean_all.bat echo if exist *.user del /f /q *.user &gt;&gt; clean_all.bat echo if exist *.sln del /f /q *.sln &gt;&gt; clean_all.bat echo if exist *.vcxproj* del /f /q *.vcxproj* &gt;&gt; clean_all.bat echo. &gt;&gt; clean_all.bat echo echo Cleanup completed. &gt;&gt; clean_all.bat :: VS Code 설정 파일 생성 echo [8/8] VS Code 설정 파일 생성 중... :: tasks.json echo { &gt; .vscode\tasks.json echo &#34;version&#34;: &#34;2.0.0&#34;, &gt;&gt; .vscode\tasks.json echo &#34;tasks&#34;: [ &gt;&gt; .vscode\tasks.json echo { &gt;&gt; .vscode\tasks.json echo &#34;label&#34;: &#34;build&#34;, &gt;&gt; .vscode\tasks.json echo &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json echo &#34;command&#34;: &#34;build.bat Debug&#34;, &gt;&gt; .vscode\tasks.json echo &#34;group&#34;: { &gt;&gt; .vscode\tasks.json echo &#34;kind&#34;: &#34;build&#34;, &gt;&gt; .vscode\tasks.json echo &#34;isDefault&#34;: true &gt;&gt; .vscode\tasks.json echo }, &gt;&gt; .vscode\tasks.json echo &#34;problemMatcher&#34;: [&#34;$msCompile&#34;] &gt;&gt; .vscode\tasks.json echo }, &gt;&gt; .vscode\tasks.json echo { &gt;&gt; .vscode\tasks.json echo &#34;label&#34;: &#34;build-release&#34;, &gt;&gt; .vscode\tasks.json echo &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json echo &#34;command&#34;: &#34;build.bat Release&#34;, &gt;&gt; .vscode\tasks.json echo &#34;group&#34;: &#34;build&#34;, &gt;&gt; .vscode\tasks.json echo &#34;problemMatcher&#34;: [&#34;$msCompile&#34;] &gt;&gt; .vscode\tasks.json echo }, &gt;&gt; .vscode\tasks.json echo { &gt;&gt; .vscode\tasks.json echo &#34;label&#34;: &#34;run&#34;, &gt;&gt; .vscode\tasks.json echo &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json echo &#34;command&#34;: &#34;run.bat&#34;, &gt;&gt; .vscode\tasks.json echo &#34;dependsOn&#34;: [&#34;build&#34;], &gt;&gt; .vscode\tasks.json echo &#34;group&#34;: { &gt;&gt; .vscode\tasks.json echo &#34;kind&#34;: &#34;test&#34;, &gt;&gt; .vscode\tasks.json echo &#34;isDefault&#34;: true &gt;&gt; .vscode\tasks.json echo } &gt;&gt; .vscode\tasks.json echo }, &gt;&gt; .vscode\tasks.json echo { &gt;&gt; .vscode\tasks.json echo &#34;label&#34;: &#34;clean&#34;, &gt;&gt; .vscode\tasks.json echo &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json echo &#34;command&#34;: &#34;clean.bat&#34;, &gt;&gt; .vscode\tasks.json echo &#34;problemMatcher&#34;: [] &gt;&gt; .vscode\tasks.json echo }, &gt;&gt; .vscode\tasks.json echo { &gt;&gt; .vscode\tasks.json echo &#34;label&#34;: &#34;clean-all&#34;, &gt;&gt; .vscode\tasks.json echo &#34;type&#34;: &#34;shell&#34;, &gt;&gt; .vscode\tasks.json echo &#34;command&#34;: &#34;clean_all.bat&#34;, &gt;&gt; .vscode\tasks.json echo &#34;problemMatcher&#34;: [] &gt;&gt; .vscode\tasks.json echo } &gt;&gt; .vscode\tasks.json echo ] &gt;&gt; .vscode\tasks.json echo } &gt;&gt; .vscode\tasks.json :: launch.json echo { &gt; .vscode\launch.json echo &#34;version&#34;: &#34;0.2.0&#34;, &gt;&gt; .vscode\launch.json echo &#34;configurations&#34;: [ &gt;&gt; .vscode\launch.json echo { &gt;&gt; .vscode\launch.json echo &#34;name&#34;: &#34;Debug&#34;, &gt;&gt; .vscode\launch.json echo &#34;type&#34;: &#34;cppvsdbg&#34;, &gt;&gt; .vscode\launch.json echo &#34;request&#34;: &#34;launch&#34;, &gt;&gt; .vscode\launch.json echo &#34;program&#34;: &#34;${workspaceFolder}\\build\\bin\\Debug\\%PROJECT_NAME%.exe&#34;, &gt;&gt; .vscode\launch.json echo &#34;args&#34;: [], &gt;&gt; .vscode\launch.json echo &#34;stopAtEntry&#34;: false, &gt;&gt; .vscode\launch.json echo &#34;cwd&#34;: &#34;${workspaceFolder}&#34;, &gt;&gt; .vscode\launch.json echo &#34;environment&#34;: [], &gt;&gt; .vscode\launch.json echo &#34;externalConsole&#34;: false, &gt;&gt; .vscode\launch.json echo &#34;preLaunchTask&#34;: &#34;build&#34; &gt;&gt; .vscode\launch.json echo } &gt;&gt; .vscode\launch.json echo ] &gt;&gt; .vscode\launch.json echo } &gt;&gt; .vscode\launch.json :: settings.json echo { &gt; .vscode\settings.json echo &#34;cmake.configureOnOpen&#34;: true, &gt;&gt; .vscode\settings.json echo &#34;cmake.buildDirectory&#34;: &#34;${workspaceFolder}/build&#34;, &gt;&gt; .vscode\settings.json echo &#34;cmake.defaultVariants&#34;: { &gt;&gt; .vscode\settings.json echo &#34;buildType&#34;: { &gt;&gt; .vscode\settings.json echo &#34;default&#34;: &#34;debug&#34;, &gt;&gt; .vscode\settings.json echo &#34;description&#34;: &#34;The build type.&#34;, &gt;&gt; .vscode\settings.json echo &#34;choices&#34;: { &gt;&gt; .vscode\settings.json echo &#34;debug&#34;: { &gt;&gt; .vscode\settings.json echo &#34;short&#34;: &#34;Debug&#34;, &gt;&gt; .vscode\settings.json echo &#34;long&#34;: &#34;Debug build type&#34;, &gt;&gt; .vscode\settings.json echo &#34;buildType&#34;: &#34;Debug&#34; &gt;&gt; .vscode\settings.json echo }, &gt;&gt; .vscode\settings.json echo &#34;release&#34;: { &gt;&gt; .vscode\settings.json echo &#34;short&#34;: &#34;Release&#34;, &gt;&gt; .vscode\settings.json echo &#34;long&#34;: &#34;Release build type&#34;, &gt;&gt; .vscode\settings.json echo &#34;buildType&#34;: &#34;Release&#34; &gt;&gt; .vscode\settings.json echo } &gt;&gt; .vscode\settings.json echo } &gt;&gt; .vscode\settings.json echo } &gt;&gt; .vscode\settings.json echo }, &gt;&gt; .vscode\settings.json echo &#34;files.associations&#34;: { &gt;&gt; .vscode\settings.json echo &#34;*.h&#34;: &#34;c&#34; &gt;&gt; .vscode\settings.json echo }, &gt;&gt; .vscode\settings.json echo &#34;cmake.sourceDirectory&#34;: &#34;${workspaceFolder}&#34; &gt;&gt; .vscode\settings.json echo } &gt;&gt; .vscode\settings.json :: .gitignore 생성 echo # 빌드 디렉토리 &gt; .gitignore echo /build/ &gt;&gt; .gitignore echo /bin/ &gt;&gt; .gitignore echo /lib/ &gt;&gt; .gitignore echo. &gt;&gt; .gitignore echo # Visual Studio 파일 &gt;&gt; .gitignore echo .vs/ &gt;&gt; .gitignore echo *.user &gt;&gt; .gitignore echo *.suo &gt;&gt; .gitignore echo *.sln &gt;&gt; .gitignore echo *.vcxproj &gt;&gt; .gitignore echo *.vcxproj.filters &gt;&gt; .gitignore echo *.vcxproj.user &gt;&gt; .gitignore echo. &gt;&gt; .gitignore echo # Conan 파일 &gt;&gt; .gitignore echo conanbuildinfo.* &gt;&gt; .gitignore echo conaninfo.txt &gt;&gt; .gitignore echo conan.lock &gt;&gt; .gitignore echo conan_toolchain.cmake &gt;&gt; .gitignore echo CMakeUserPresets.json &gt;&gt; .gitignore echo. &gt;&gt; .gitignore echo # 임시 파일 &gt;&gt; .gitignore echo *.tmp &gt;&gt; .gitignore echo *.log &gt;&gt; .gitignore echo. echo =============================================== echo 초기화가 완료되었습니다! echo 프로젝트 이름: %PROJECT_NAME% echo. echo 다음 단계: echo 1. VS Code에서 프로젝트 열기 echo 2. &#39;build.bat&#39; 실행하여 프로젝트 빌드하기 echo 3. &#39;run.bat&#39; 실행하여 프로그램 실행하기 echo 4. VS Code에서 F5 키로 디버깅 시작하기 echo =============================================== endlocal">
+  <meta property="og:locale" content="ko_kr">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:published_time" content="2025-02-27T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-02-27T00:00:00+00:00">
+<title>C init.bat | choidaruhan</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="https://baboyiban.github.io/docs/c-init.bat/">
+<link rel="stylesheet" href="/book.min.26ab4dc3f6076ceda2f9c263aa4029ae3341dbcce339f901aa432b11da6e5894.css" integrity="sha256-JqtNw/YHbO2i&#43;cJjqkAprjNB28zjOfkBqkMrEdpuWJQ=" crossorigin="anonymous">
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.580fa934a451f417a19b73c46263e9608c27a3523049c765915c28517204e0d8.js" integrity="sha256-WA&#43;pNKRR9Behm3PEYmPpYIwno1IwScdlkVwoUXIE4Ng=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>choidaruhan</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EB%B0%9C%EB%8F%84%EB%A5%B4%ED%94%84-%EA%B5%90%EC%9C%A1/" class="">발도르프 교육</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/" class="">프로젝트 kosta-2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/helix-editor-%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/" class="">Helix Editor 언어 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/" class="">MQTT 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어?</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/sql-lite-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">SQL Lite 사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/" class="">CSS 초기 세팅</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1/" class="">AI가 어려워하는 문제 1</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/cmakelists.txt/" class="">CMakeLists.txt</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-color-%EC%A1%B0%ED%95%A9/" class="">CSS Color 조합</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ubuntu-%EC%84%A4%EC%A0%95/" class="">Ubuntu 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docker-ubuntu%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Docker Ubuntu에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docker-%EC%82%AD%EC%A0%9C-%EB%AA%85%EB%A0%B9%EC%96%B4/" class="">Docker 삭제 명령어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/helix-editor/" class="">Helix Editor</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/windows-%EC%84%A4%EC%B9%98-%EC%A4%91-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%97%B0%EA%B2%B0-%EB%AC%B8%EC%A0%9C/" class="">Windows 설치 중 네트워크 연결 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ubuntu-%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/" class="">Ubuntu 한글 깨짐 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ghostty/" class="">Ghostty - config</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/alacritty/" class="">Alacritty</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/class-%EC%9D%B4%EB%A6%84-bem/" class="">Class 이름 BEM</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-gradient-image/" class="">CSS gradient image</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-table/" class="">CSS Table</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/react-flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/" class="">React Flux 패턴 간단 예제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ubuntu-%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/" class="">Ubuntu 저장 공간 확인</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/xmake-%EC%82%AC%EC%9A%A9%EB%B2%95/" class="">XMake 사용법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/xmake.lua/" class="">xmake.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/" class="">나만의 프로그래밍 언어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98/" class="">알고리즘</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/" class="">자격증 목록</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/c-init.bat/" class="active">C init.bat</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/" class="">Conan으로 C언어 프로젝트 디버그, 컴파일, 실행하는 방법 요약</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/zed-editor-windows%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Zed Editor Windows에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/neovim/" class="">NeoVim Config</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/uiux-%EC%83%89%EC%83%81/" class="">UIUX 색상</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/qwen-2.5-coder/" class="">Qwen 2.5 Coder</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/latex-%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EB%AC%B8%EB%B2%95/" class="">LaTeX 마크다운 문법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/" class="">마크다운 이미지 넣는법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/" class="">AI가 어려워하는 문제 1 - 추가</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/prisma-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">Prisma 사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/zshrc-%EC%84%A4%EC%A0%95/" class="">zshrc 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-4/" class="">AI가 어려워하는 문제 4</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-3/" class="">AI가 어려워하는 문제 3</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-2/" class="">AI가 어려워하는 문제 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-mtc/" class="">프로젝트 mtc</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-blog/" class="">프로젝트 blog</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nextjs-%EA%B5%AC%EC%A1%B0/" class="">Nextjs 구조</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/git-add%EC%99%80-commit/" class="">Git add와 commit</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/git-username-password-%EC%A0%80%EC%9E%A5/" class="">Git username password 저장</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nginx-letsencrypt-%EC%9E%90%EB%8F%99%EA%B0%B1%EC%8B%A0/" class="">Nginx Letsencrypt 자동갱신</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nextjs---failed-websocket-is-closed-due-to-suspension./" class="">Nextjs - failed WebSocket is closed due to suspension.</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/" class="">AWS 연결하는 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/oracle-%EC%97%B0%EA%B2%B0/" class="">Oracle 연결</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/font-size/" class="">Font Size</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nginx---ssl-%EC%9D%B8%EC%A6%9D-%EB%B0%9B%EA%B8%B0/" class="">Nginx Ssl 인증 받기</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>C init.bat</h3>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents"></nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="c-initbat">
+  C init.bat
+  <a class="anchor" href="#c-initbat">#</a>
+</h1>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>@echo off
+</span></span><span style="display:flex;"><span>setlocal enabledelayedexpansion
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">==================================</span>
+</span></span><span style="display:flex;"><span>echo C 프로젝트 빌드 시스템 초기화
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">==================================</span>
+</span></span><span style="display:flex;"><span>echo.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: 프로젝트 이름 입력받기
+</span></span><span style="display:flex;"><span>set /p PROJECT_NAME<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;프로젝트 이름을 입력하세요 (기본값: MyProject): &#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#34;!PROJECT_NAME!&#34;</span><span style="color:#f92672">==</span><span style="color:#e6db74">&#34;&#34;</span> set PROJECT_NAME<span style="color:#f92672">=</span>MyProject
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: VS Code 폴더 생성
+</span></span><span style="display:flex;"><span>mkdir .vscode 2&gt;nul
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: 필요한 디렉토리 확인 및 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>1/8<span style="color:#f92672">]</span> 디렉토리 구조 생성 중...
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> not exist src mkdir src
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> not exist src<span style="color:#ae81ff">\l</span>ib mkdir src<span style="color:#ae81ff">\l</span>ib
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> not exist src<span style="color:#ae81ff">\m</span>ain.c <span style="color:#f92672">(</span>
+</span></span><span style="display:flex;"><span>    echo <span style="color:#75715e">#include ^&lt;stdio.h^&gt; &gt; src\main.c</span>
+</span></span><span style="display:flex;"><span>    echo. &gt;&gt; src<span style="color:#ae81ff">\m</span>ain.c
+</span></span><span style="display:flex;"><span>    echo int main<span style="color:#f92672">(</span>void<span style="color:#f92672">)</span> <span style="color:#f92672">{</span> &gt;&gt; src<span style="color:#ae81ff">\m</span>ain.c
+</span></span><span style="display:flex;"><span>    echo     printf<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Hello, World!\n&#34;</span><span style="color:#f92672">)</span>; &gt;&gt; src<span style="color:#ae81ff">\m</span>ain.c
+</span></span><span style="display:flex;"><span>    echo     <span style="color:#66d9ef">return</span> 0; &gt;&gt; src<span style="color:#ae81ff">\m</span>ain.c
+</span></span><span style="display:flex;"><span>    echo <span style="color:#f92672">}</span> &gt;&gt; src<span style="color:#ae81ff">\m</span>ain.c
+</span></span><span style="display:flex;"><span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: CMakeLists.txt 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>2/8<span style="color:#f92672">]</span> CMakeLists.txt 생성 중...
+</span></span><span style="display:flex;"><span>echo cmake_minimum_required<span style="color:#f92672">(</span>VERSION 3.15<span style="color:#f92672">)</span> &gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo project<span style="color:#f92672">(</span>%PROJECT_NAME% C CXX<span style="color:#f92672">)</span>  <span style="color:#75715e"># C와 C++ 모두 지원 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 빌드 산출물 디렉토리 설정 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo set<span style="color:#f92672">(</span>CMAKE_ARCHIVE_OUTPUT_DIRECTORY <span style="color:#e6db74">${</span>CMAKE_BINARY_DIR<span style="color:#e6db74">}</span>/lib<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo set<span style="color:#f92672">(</span>CMAKE_LIBRARY_OUTPUT_DIRECTORY <span style="color:#e6db74">${</span>CMAKE_BINARY_DIR<span style="color:#e6db74">}</span>/lib<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo set<span style="color:#f92672">(</span>CMAKE_RUNTIME_OUTPUT_DIRECTORY <span style="color:#e6db74">${</span>CMAKE_BINARY_DIR<span style="color:#e6db74">}</span>/bin<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 빌드 타입이 지정되지 않은 경우 기본값 설정 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span><span style="color:#f92672">(</span>NOT CMAKE_BUILD_TYPE<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo   set<span style="color:#f92672">(</span>CMAKE_BUILD_TYPE Debug<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo endif<span style="color:#f92672">()</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 소스 디렉토리 추가 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo include_directories<span style="color:#f92672">(</span>src<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># Conan 패키지 찾기 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo find_package<span style="color:#f92672">(</span>ZLIB CONFIG REQUIRED<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo find_package<span style="color:#f92672">(</span>GTest CONFIG REQUIRED<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 모든 C 소스 및 헤더 파일 자동 수집 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo file<span style="color:#f92672">(</span>GLOB_RECURSE SOURCES <span style="color:#e6db74">&#34;src/*.c&#34;</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo file<span style="color:#f92672">(</span>GLOB_RECURSE HEADERS <span style="color:#e6db74">&#34;src/*.h&#34;</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 수집된 파일 목록 출력 (디버깅용) &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo message<span style="color:#f92672">(</span>STATUS <span style="color:#e6db74">&#34;Found source files: </span><span style="color:#e6db74">${</span>SOURCES<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo message<span style="color:#f92672">(</span>STATUS <span style="color:#e6db74">&#34;Found header files: </span><span style="color:#e6db74">${</span>HEADERS<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 실행 파일 생성 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo add_executable<span style="color:#f92672">(</span>%PROJECT_NAME% <span style="color:#e6db74">${</span>SOURCES<span style="color:#e6db74">}</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo target_link_libraries<span style="color:#f92672">(</span>%PROJECT_NAME% PRIVATE ZLIB::ZLIB GTest::gtest GTest::gtest_main<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 컴파일러 경고 처리 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span><span style="color:#f92672">(</span>MSVC<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo     <span style="color:#75715e"># Windows에서 안전하지 않은 함수 경고 무시 옵션 추가 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo     target_compile_definitions<span style="color:#f92672">(</span>%PROJECT_NAME% PRIVATE _CRT_SECURE_NO_WARNINGS<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo     <span style="color:#75715e"># 경고 레벨 설정 &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo     target_compile_options<span style="color:#f92672">(</span>%PROJECT_NAME% PRIVATE /W4<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">else</span><span style="color:#f92672">()</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo     target_compile_options<span style="color:#f92672">(</span>%PROJECT_NAME% PRIVATE -Wall -Wextra<span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo endif<span style="color:#f92672">()</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 소스 그룹 생성 (IDE에서 폴더 구조 유지) &gt;&gt; CMakeLists.txt</span>
+</span></span><span style="display:flex;"><span>echo source_group<span style="color:#f92672">(</span>TREE <span style="color:#e6db74">${</span>CMAKE_CURRENT_SOURCE_DIR<span style="color:#e6db74">}</span>/src PREFIX <span style="color:#e6db74">&#34;Source Files&#34;</span> FILES <span style="color:#e6db74">${</span>SOURCES<span style="color:#e6db74">}</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>echo source_group<span style="color:#f92672">(</span>TREE <span style="color:#e6db74">${</span>CMAKE_CURRENT_SOURCE_DIR<span style="color:#e6db74">}</span>/src PREFIX <span style="color:#e6db74">&#34;Header Files&#34;</span> FILES <span style="color:#e6db74">${</span>HEADERS<span style="color:#e6db74">}</span><span style="color:#f92672">)</span> &gt;&gt; CMakeLists.txt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: conanfile.txt 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>3/8<span style="color:#f92672">]</span> conanfile.txt 생성 중...
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>requires<span style="color:#f92672">]</span> &gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo zlib/1.2.11 &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo gtest/1.10.0 &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>generators<span style="color:#f92672">]</span> &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo CMakeDeps &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo CMakeToolchain &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>options<span style="color:#f92672">]</span> &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo zlib/*:shared<span style="color:#f92672">=</span>False &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo gtest/*:shared<span style="color:#f92672">=</span>False &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>imports<span style="color:#f92672">]</span> &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo bin, *.dll -^&gt; ./bin &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo lib, *.dylib* -^&gt; ./bin &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>echo lib, *.so* -^&gt; ./bin &gt;&gt; conanfile.txt
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: build.bat 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>4/8<span style="color:#f92672">]</span> build.bat 생성 중...
+</span></span><span style="display:flex;"><span>echo @echo off &gt; build.bat
+</span></span><span style="display:flex;"><span>echo setlocal &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: 빌드 타입 설정 <span style="color:#f92672">(</span>기본값: Debug<span style="color:#f92672">)</span> &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo set BUILD_TYPE<span style="color:#f92672">=</span>Debug &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> not <span style="color:#e6db74">&#34;%%~1&#34;</span><span style="color:#f92672">==</span><span style="color:#e6db74">&#34;&#34;</span> set BUILD_TYPE<span style="color:#f92672">=</span>%%~1 &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo echo Building in %%BUILD_TYPE%% mode &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: 빌드 디렉토리 설정 &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo set BUILD_DIR<span style="color:#f92672">=</span>build &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: 빌드 디렉토리 생성 &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> not exist %%BUILD_DIR%% mkdir %%BUILD_DIR%% &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo cd %%BUILD_DIR%% &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: Conan 설정 및 종속성 설치 <span style="color:#f92672">(</span>출력 폴더 명시적 지정<span style="color:#f92672">)</span> &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo conan install .. --build<span style="color:#f92672">=</span>missing -s build_type<span style="color:#f92672">=</span>%%BUILD_TYPE%% -g CMakeDeps -g CMakeToolchain --output-folder<span style="color:#f92672">=</span>. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: CMake 구성 <span style="color:#f92672">(</span>생성된 Conan 툴체인 파일 명시적 지정<span style="color:#f92672">)</span> &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo cmake .. -DCMAKE_TOOLCHAIN_FILE<span style="color:#f92672">=</span>conan_toolchain.cmake -DCMAKE_BUILD_TYPE<span style="color:#f92672">=</span>%%BUILD_TYPE%% &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: 빌드 실행 &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo cmake --build . --config %%BUILD_TYPE%% &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: 실행 파일 경로 출력 &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo echo Build completed. Executable is at: %%CD%%<span style="color:#ae81ff">\b</span>in<span style="color:#ae81ff">\%</span>%BUILD_TYPE%%<span style="color:#ae81ff">\%</span>PROJECT_NAME%.exe &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo :: 원래 디렉토리로 돌아가기 &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo cd .. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>echo endlocal &gt;&gt; build.bat
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: run.bat 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>5/8<span style="color:#f92672">]</span> run.bat 생성 중...
+</span></span><span style="display:flex;"><span>echo @echo off &gt; run.bat
+</span></span><span style="display:flex;"><span>echo setlocal &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo :: 빌드 타입 설정 <span style="color:#f92672">(</span>기본값: Debug<span style="color:#f92672">)</span> &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo set BUILD_TYPE<span style="color:#f92672">=</span>Debug &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> not <span style="color:#e6db74">&#34;%%~1&#34;</span><span style="color:#f92672">==</span><span style="color:#e6db74">&#34;&#34;</span> set BUILD_TYPE<span style="color:#f92672">=</span>%%~1 &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo :: 실행 파일 경로 &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo set EXECUTABLE_PATH<span style="color:#f92672">=</span>build<span style="color:#ae81ff">\b</span>in<span style="color:#ae81ff">\%</span>%BUILD_TYPE%%<span style="color:#ae81ff">\%</span>PROJECT_NAME%.exe &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo :: 실행 파일 존재 확인 &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> not exist %%EXECUTABLE_PATH%% <span style="color:#f92672">(</span> &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo     echo Error: Executable not found at %%EXECUTABLE_PATH%%. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo     echo Please run build.bat first. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo     exit /b <span style="color:#ae81ff">1</span> &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">)</span> &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo :: 실행 파일 실행 &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo echo Running %%EXECUTABLE_PATH%%... &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo %%EXECUTABLE_PATH%% %%2 %%3 %%4 %%5 %%6 %%7 %%8 %%9 &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>echo endlocal &gt;&gt; run.bat
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: clean.bat 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>6/8<span style="color:#f92672">]</span> clean.bat 생성 중...
+</span></span><span style="display:flex;"><span>echo @echo off &gt; clean.bat
+</span></span><span style="display:flex;"><span>echo echo Cleaning build directory... &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist build <span style="color:#f92672">(</span> &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo     rd /s /q build &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo     echo Build directory removed successfully. &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">)</span> <span style="color:#66d9ef">else</span> <span style="color:#f92672">(</span> &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo     echo No build directory found. &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">)</span> &gt;&gt; clean.bat
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: clean_all.bat 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>7/8<span style="color:#f92672">]</span> clean_all.bat 생성 중...
+</span></span><span style="display:flex;"><span>echo @echo off &gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo echo Performing complete cleanup... &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo :: 빌드 디렉토리 삭제 &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist build <span style="color:#f92672">(</span> &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo     rd /s /q build &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo     echo Build directory removed. &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">)</span> &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo :: 프로젝트 루트의 Conan 생성 파일 삭제 &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist conan_toolchain.cmake del /f /q conan_toolchain.cmake &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist conaninfo.txt del /f /q conaninfo.txt &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist conanbuildinfo.* del /f /q conanbuildinfo.* &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist conan.lock del /f /q conan.lock &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist CMakeUserPresets.json del /f /q CMakeUserPresets.json &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo :: 기타 VS 임시 파일 삭제 &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist .vs rd /s /q .vs &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist *.user del /f /q *.user &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist *.sln del /f /q *.sln &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo <span style="color:#66d9ef">if</span> exist *.vcxproj* del /f /q *.vcxproj* &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>echo echo Cleanup completed. &gt;&gt; clean_all.bat
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: VS Code 설정 파일 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">[</span>8/8<span style="color:#f92672">]</span> VS Code 설정 파일 생성 중...
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: tasks.json
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">{</span> &gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;2.0.0&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;tasks&#34;</span>: <span style="color:#f92672">[</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;label&#34;</span>: <span style="color:#e6db74">&#34;build&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;shell&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;command&#34;</span>: <span style="color:#e6db74">&#34;build.bat Debug&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#e6db74">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;build&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#e6db74">&#34;isDefault&#34;</span>: true &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;problemMatcher&#34;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#34;</span>$msCompile<span style="color:#e6db74">&#34;</span><span style="color:#f92672">]</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;label&#34;</span>: <span style="color:#e6db74">&#34;build-release&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;shell&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;command&#34;</span>: <span style="color:#e6db74">&#34;build.bat Release&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;build&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;problemMatcher&#34;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#34;</span>$msCompile<span style="color:#e6db74">&#34;</span><span style="color:#f92672">]</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;label&#34;</span>: <span style="color:#e6db74">&#34;run&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;shell&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;command&#34;</span>: <span style="color:#e6db74">&#34;run.bat&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;dependsOn&#34;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#34;build&#34;</span><span style="color:#f92672">]</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#e6db74">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;test&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#e6db74">&#34;isDefault&#34;</span>: true &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;label&#34;</span>: <span style="color:#e6db74">&#34;clean&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;shell&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;command&#34;</span>: <span style="color:#e6db74">&#34;clean.bat&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;problemMatcher&#34;</span>: <span style="color:#f92672">[]</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;label&#34;</span>: <span style="color:#e6db74">&#34;clean-all&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;shell&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;command&#34;</span>: <span style="color:#e6db74">&#34;clean_all.bat&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;problemMatcher&#34;</span>: <span style="color:#f92672">[]</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#f92672">]</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\t</span>asks.json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: launch.json
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">{</span> &gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;0.2.0&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;configurations&#34;</span>: <span style="color:#f92672">[</span> &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Debug&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;cppvsdbg&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;request&#34;</span>: <span style="color:#e6db74">&#34;launch&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;program&#34;</span>: <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>workspaceFolder<span style="color:#e6db74">}</span><span style="color:#e6db74">\\build\\bin\\Debug\\%PROJECT_NAME%.exe&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;args&#34;</span>: <span style="color:#f92672">[]</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;stopAtEntry&#34;</span>: false, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;cwd&#34;</span>: <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>workspaceFolder<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;environment&#34;</span>: <span style="color:#f92672">[]</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;externalConsole&#34;</span>: false, &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;preLaunchTask&#34;</span>: <span style="color:#e6db74">&#34;build&#34;</span> &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#f92672">]</span> &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\l</span>aunch.json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: settings.json
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">{</span> &gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;cmake.configureOnOpen&#34;</span>: true, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;cmake.buildDirectory&#34;</span>: <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>workspaceFolder<span style="color:#e6db74">}</span><span style="color:#e6db74">/build&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;cmake.defaultVariants&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#e6db74">&#34;buildType&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;default&#34;</span>: <span style="color:#e6db74">&#34;debug&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;The build type.&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#e6db74">&#34;choices&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#e6db74">&#34;debug&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                     <span style="color:#e6db74">&#34;short&#34;</span>: <span style="color:#e6db74">&#34;Debug&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                     <span style="color:#e6db74">&#34;long&#34;</span>: <span style="color:#e6db74">&#34;Debug build type&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                     <span style="color:#e6db74">&#34;buildType&#34;</span>: <span style="color:#e6db74">&#34;Debug&#34;</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#e6db74">&#34;release&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                     <span style="color:#e6db74">&#34;short&#34;</span>: <span style="color:#e6db74">&#34;Release&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                     <span style="color:#e6db74">&#34;long&#34;</span>: <span style="color:#e6db74">&#34;Release build type&#34;</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                     <span style="color:#e6db74">&#34;buildType&#34;</span>: <span style="color:#e6db74">&#34;Release&#34;</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo                 <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo             <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;files.associations&#34;</span>: <span style="color:#f92672">{</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo         <span style="color:#e6db74">&#34;*.h&#34;</span>: <span style="color:#e6db74">&#34;c&#34;</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#f92672">}</span>, &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo     <span style="color:#e6db74">&#34;cmake.sourceDirectory&#34;</span>: <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>workspaceFolder<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">}</span> &gt;&gt; .vscode<span style="color:#ae81ff">\s</span>ettings.json
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>:: .gitignore 생성
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 빌드 디렉토리 &gt; .gitignore</span>
+</span></span><span style="display:flex;"><span>echo /build/ &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo /bin/ &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo /lib/ &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># Visual Studio 파일 &gt;&gt; .gitignore</span>
+</span></span><span style="display:flex;"><span>echo .vs/ &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.user &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.suo &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.sln &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.vcxproj &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.vcxproj.filters &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.vcxproj.user &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># Conan 파일 &gt;&gt; .gitignore</span>
+</span></span><span style="display:flex;"><span>echo conanbuildinfo.* &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo conaninfo.txt &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo conan.lock &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo conan_toolchain.cmake &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo CMakeUserPresets.json &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo. &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo <span style="color:#75715e"># 임시 파일 &gt;&gt; .gitignore</span>
+</span></span><span style="display:flex;"><span>echo *.tmp &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>echo *.log &gt;&gt; .gitignore
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>echo.
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">===============================================</span>
+</span></span><span style="display:flex;"><span>echo 초기화가 완료되었습니다!
+</span></span><span style="display:flex;"><span>echo 프로젝트 이름: %PROJECT_NAME%
+</span></span><span style="display:flex;"><span>echo.
+</span></span><span style="display:flex;"><span>echo 다음 단계:
+</span></span><span style="display:flex;"><span>echo 1. VS Code에서 프로젝트 열기
+</span></span><span style="display:flex;"><span>echo 2. <span style="color:#e6db74">&#39;build.bat&#39;</span> 실행하여 프로젝트 빌드하기
+</span></span><span style="display:flex;"><span>echo 3. <span style="color:#e6db74">&#39;run.bat&#39;</span> 실행하여 프로그램 실행하기
+</span></span><span style="display:flex;"><span>echo 4. VS Code에서 F5 키로 디버깅 시작하기
+</span></span><span style="display:flex;"><span>echo <span style="color:#f92672">===============================================</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>endlocal
+</span></span></code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents"></nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

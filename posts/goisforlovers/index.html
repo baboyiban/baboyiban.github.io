@@ -1,127 +1,1159 @@
-<!doctype html><html lang=en-us dir=ltr><head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Hugo uses the excellent Go html/template library for
+<!DOCTYPE html>
+<html lang="ko-kr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Hugo uses the excellent Go html/template library for
 its template engine. It is an extremely lightweight engine that provides a very
 small amount of logic. In our experience that it is just the right amount of
 logic to be able to create a good static website. If you have used other
 template systems from different languages or frameworks you will find a lot of
 similarities in Go templates.
 This document is a brief primer on using Go templates. The Go docs
-provide more details."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="http://localhost:1313/posts/goisforlovers/"><meta property="og:site_name" content="My New Hugo Site"><meta property="og:title" content="(Hu)go Template Primer"><meta property="og:description" content="Hugo uses the excellent Go html/template library for its template engine. It is an extremely lightweight engine that provides a very small amount of logic. In our experience that it is just the right amount of logic to be able to create a good static website. If you have used other template systems from different languages or frameworks you will find a lot of similarities in Go templates.
-This document is a brief primer on using Go templates. The Go docs provide more details."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2014-04-02T00:00:00+00:00"><meta property="article:modified_time" content="2014-04-02T00:00:00+00:00"><meta property="article:tag" content="Go"><meta property="article:tag" content="Golang"><meta property="article:tag" content="Templates"><meta property="article:tag" content="Themes"><meta property="article:tag" content="Development"><title>(Hu)go Template Primer | My New Hugo Site</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=http://localhost:1313/posts/goisforlovers/><link rel=stylesheet href=/book.min.26ab4dc3f6076ceda2f9c263aa4029ae3341dbcce339f901aa432b11da6e5894.css integrity="sha256-JqtNw/YHbO2i+cJjqkAprjNB28zjOfkBqkMrEdpuWJQ=" crossorigin=anonymous><script defer src=/fuse.min.js></script><script defer src=/en.search.min.8799ed2ff2a9db3fa9e4e7ccab4e1506d6ff0a5189a8233ee0eaf0703ce5bab4.js integrity="sha256-h5ntL/Kp2z+p5OfMq04VBtb/ClGJqCM+4OrwcDzlurQ=" crossorigin=anonymous></script></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><span>My New Hugo Site</span></a></h2><div class="book-search hidden"><input type=text id=book-search-input placeholder=Search aria-label=Search maxlength=64 data-hotkeys=s/><div class="book-search-spinner hidden"></div><ul id=book-search-results></ul></div><script>document.querySelector(".book-search").classList.remove("hidden")</script><ul><li><a href=/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/>Ai가 어려워하는 문제 1 추가</a></li><li><a href=/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1/>Ai가 어려워하는 문제 1</a></li><li><a href=/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-2/>Ai가 어려워하는 문제 2</a></li><li><a href=/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-3/>Ai가 어려워하는 문제 3</a></li><li><a href=/docs/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-4/>Ai가 어려워하는 문제 4</a></li><li><a href=/docs/docs/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/>Aws 연결하는 방법</a></li><li><a href=/docs/docs/c-init.bat/>C Init.bat</a></li><li><a href=/docs/docs/class-%EC%9D%B4%EB%A6%84-bem/>Class 이름 Bem</a></li><li><a href=/docs/docs/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/>Conan으로 C언어 프로젝트 디버그, 컴파일, 실행하는 방법 요약</a></li><li><a href=/docs/docs/css-color-%EC%A1%B0%ED%95%A9/>Css Color 조합</a></li><li><a href=/docs/docs/css-gradient-image/>Css Gradient Image</a></li><li><a href=/docs/docs/css-table/>Css Table</a></li><li><a href=/docs/docs/css-%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/>Css 초기 세팅</a></li><li><a href=/docs/docs/docker-%EC%82%AD%EC%A0%9C-%EB%AA%85%EB%A0%B9%EC%96%B4/>Docker 삭제 명령어</a></li><li><a href=/docs/docs/font-size/>Font Size</a></li><li><a href=/docs/docs/ghostty---config/>Ghostty Config</a></li><li><a href=/docs/docs/git-add%EC%99%80-commit/>Git Add와 Commit</a></li><li><a href=/docs/docs/git-username-password-%EC%A0%80%EC%9E%A5/>Git Username Password 저장</a></li><li><a href=/docs/docs/helix-editor---config.toml/>Helix Editor Config.toml</a></li><li><a href=/docs/docs/helix-editor---languages.toml/>Helix Editor Languages.toml</a></li><li><a href=/docs/docs/helix-editor-%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/>Helix Editor 언어 설정</a></li><li><a href=/docs/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/>Mqtt 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어?</a></li><li><a href=/docs/docs/neovim-plugin---colorscheme.lua/>Neo Vim Plugin Colorscheme.lua</a></li><li><a href=/docs/docs/neovim-plugin---oil.lua/>Neo Vim Plugin Oil.lua</a></li><li><a href=/docs/docs/neovim-plugin---telescope.lua/>Neo Vim Plugin Telescope.lua</a></li><li><a href=/docs/docs/nextjs---failed-websocket-is-closed-due-to-suspension./>Nextjs Failed Web Socket Is Closed Due to Suspension.</a></li><li><a href=/docs/docs/nextjs-%EA%B5%AC%EC%A1%B0/>Nextjs 구조</a></li><li><a href=/docs/docs/nginx---ssl-%EC%9D%B8%EC%A6%9D-%EB%B0%9B%EA%B8%B0/>Nginx Ssl 인증 받기</a></li><li><a href=/docs/docs/prisma-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/>Prisma 사용 방법</a></li><li><a href=/docs/docs/qwen-2.5-coder/>Qwen 2.5 Coder</a></li><li><a href=/docs/docs/react-flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/>React Flux 패턴 간단 예제</a></li><li><a href=/docs/docs/ubuntu-%EC%84%A4%EC%A0%95/>Ubuntu 설정</a></li><li><a href=/docs/docs/ubuntu-%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/>Ubuntu 저장 공간 확인</a></li><li><a href=/docs/docs/ubuntu-%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/>Ubuntu 한글 깨짐 문제</a></li><li><a href=/docs/docs/uiux-%EC%83%89%EC%83%81/>Uiux 색상</a></li><li><a href=/docs/docs/windows-%EC%84%A4%EC%B9%98-%EC%A4%91-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%97%B0%EA%B2%B0-%EB%AC%B8%EC%A0%9C/>Windows 설치 중 네트워크 연결 문제</a></li><li><a href=/docs/docs/xmake-%EC%82%AC%EC%9A%A9%EB%B2%95/>Xmake 사용법</a></li><li><a href=/docs/docs/zed-editor-windows%EC%97%90-%EC%84%A4%EC%B9%98/>Zed Editor Windows에 설치</a></li><li><a href=/docs/docs/zshrc-%EC%84%A4%EC%A0%95/>Zshrc 설정</a></li><li><a href=/docs/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/>나만의 프로그래밍 언어</a></li><li><a href=/docs/docs/%EB%B0%9C%EB%8F%84%EB%A5%B4%ED%94%84-%EA%B5%90%EC%9C%A1/>발도르프 교육</a></li><li><a href=/docs/docs/%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98/>알고리즘</a></li><li><a href=/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-blog/>프로젝트 Blog</a></li><li><a href=/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/>프로젝트 Kosta 2</a></li><li><a href=/docs/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-mtc/>프로젝트 Mtc</a></li><li><a href=/docs/docs/alacritty---alacritty.toml/>alacritty.toml</a></li><li><a href=/docs/docs/cmakelists.txt/>CMakeLists.txt</a></li><li><a href=/docs/docs/neovim-config---keymaps.lua/>keymaps.lua</a></li><li><a href=/docs/docs/nginx---letsencrypt-%EC%9E%90%EB%8F%99%EA%B0%B1%EC%8B%A0/>Letsencrypt 자동갱신</a></li><li><a href=/docs/docs/oracle-%EC%97%B0%EA%B2%B0/>Oracle 연결</a></li><li><a href=/docs/docs/docker-ubuntu%EC%97%90-%EC%84%A4%EC%B9%98/>Ubuntu에 설치</a></li><li><a href=/docs/docs/xmake.lua/>xmake.lua</a></li><li><a href=/docs/docs/latex-%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EB%AC%B8%EB%B2%95/>기호 모음</a></li><li><a href=/docs/docs/sql-lite-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/>사용 방법</a></li><li><a href=/docs/docs/%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/>이미지 넣는법</a></li><li><a href=/docs/docs/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/>자격증 목록</a></li></ul><ul><li><a href=/posts/>Blog</a></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>(Hu)go Template Primer</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#introduction-to-go-templates>Introduction to Go Templates</a></li><li><a href=#basic-syntax>Basic Syntax</a></li><li><a href=#variables>Variables</a></li><li><a href=#functions>Functions</a></li><li><a href=#includes>Includes</a></li><li><a href=#logic>Logic</a><ul><li><a href=#iteration>Iteration</a></li><li><a href=#conditionals>Conditionals</a></li></ul></li><li><a href=#pipes>Pipes</a></li><li><a href=#context-aka-the-dot>Context (aka. the dot)</a></li></ul><ul><li><a href=#using-content-page-parameters>Using Content (page) Parameters</a></li><li><a href=#using-site-config-parameters>Using Site (config) Parameters</a></li></ul></nav></aside></header><article class="markdown book-post"><h1>(Hu)go Template Primer</h1><div class="flex align-center text-small book-post-date"><img src=/svg/calendar.svg class=book-icon alt>
-<span>April 2, 2014</span></div><div class=text-small><a href=/categories/development/>Development</a>,
-<a href=/categories/golang/>Golang</a></div><div class=text-small><a href=/tags/go/>Go</a>,
-<a href=/tags/golang/>Golang</a>,
-<a href=/tags/templates/>Templates</a>,
-<a href=/tags/themes/>Themes</a>,
-<a href=/tags/development/>Development</a></div><div class=book-post-content><p>Hugo uses the excellent <a href=https://golang.org/>Go</a> <a href=https://golang.org/pkg/html/template/>html/template</a> library for
+provide more details.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://baboyiban.github.io/posts/goisforlovers/">
+  <meta property="og:site_name" content="choidaruhan">
+  <meta property="og:title" content="(Hu)go Template Primer">
+  <meta property="og:description" content="Hugo uses the excellent Go html/template library for its template engine. It is an extremely lightweight engine that provides a very small amount of logic. In our experience that it is just the right amount of logic to be able to create a good static website. If you have used other template systems from different languages or frameworks you will find a lot of similarities in Go templates.
+This document is a brief primer on using Go templates. The Go docs provide more details.">
+  <meta property="og:locale" content="ko_kr">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2014-04-02T00:00:00+00:00">
+    <meta property="article:modified_time" content="2014-04-02T00:00:00+00:00">
+    <meta property="article:tag" content="Go">
+    <meta property="article:tag" content="Golang">
+    <meta property="article:tag" content="Templates">
+    <meta property="article:tag" content="Themes">
+    <meta property="article:tag" content="Development">
+<title>(Hu)go Template Primer | choidaruhan</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="https://baboyiban.github.io/posts/goisforlovers/">
+<link rel="stylesheet" href="/book.min.26ab4dc3f6076ceda2f9c263aa4029ae3341dbcce339f901aa432b11da6e5894.css" integrity="sha256-JqtNw/YHbO2i&#43;cJjqkAprjNB28zjOfkBqkMrEdpuWJQ=" crossorigin="anonymous">
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.d7efa8e7fd0e4a03dd87546826f1519fb1d23bb958d6af4602ba3285f31076e8.js" integrity="sha256-1&#43;&#43;o5/0OSgPdh1RoJvFRn7HSO7lY1q9GAroyhfMQdug=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>choidaruhan</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EB%82%98%EB%A7%8C%EC%9D%98-%ED%94%84%EB%A1%9C%EA%B7%B8%EB%9E%98%EB%B0%8D-%EC%96%B8%EC%96%B4/" class="">나만의 프로그래밍 언어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1---%EC%B6%94%EA%B0%80/" class="">Ai가 어려워하는 문제 1 추가</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-1/" class="">Ai가 어려워하는 문제 1</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-2/" class="">Ai가 어려워하는 문제 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-3/" class="">Ai가 어려워하는 문제 3</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ai%EA%B0%80-%EC%96%B4%EB%A0%A4%EC%9B%8C%ED%95%98%EB%8A%94-%EB%AC%B8%EC%A0%9C-4/" class="">Ai가 어려워하는 문제 4</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/aws-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95/" class="">Aws 연결하는 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/c-init.bat/" class="">C Init.bat</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/class-%EC%9D%B4%EB%A6%84-bem/" class="">Class 이름 Bem</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/conan%EC%9C%BC%EB%A1%9C-c%EC%96%B8%EC%96%B4-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EB%94%94%EB%B2%84%EA%B7%B8-%EC%BB%B4%ED%8C%8C%EC%9D%BC-%EC%8B%A4%ED%96%89%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95-%EC%9A%94%EC%95%BD/" class="">Conan으로 C언어 프로젝트 디버그, 컴파일, 실행하는 방법 요약</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-color-%EC%A1%B0%ED%95%A9/" class="">Css Color 조합</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-gradient-image/" class="">Css Gradient Image</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-table/" class="">Css Table</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/css-%EC%B4%88%EA%B8%B0-%EC%84%B8%ED%8C%85/" class="">Css 초기 세팅</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docker-%EC%82%AD%EC%A0%9C-%EB%AA%85%EB%A0%B9%EC%96%B4/" class="">Docker 삭제 명령어</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/font-size/" class="">Font Size</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ghostty---config/" class="">Ghostty Config</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/git-add%EC%99%80-commit/" class="">Git Add와 Commit</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/git-username-password-%EC%A0%80%EC%9E%A5/" class="">Git Username Password 저장</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/helix-editor---config.toml/" class="">Helix Editor Config.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/helix-editor---languages.toml/" class="">Helix Editor Languages.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/helix-editor-%EC%96%B8%EC%96%B4-%EC%84%A4%EC%A0%95/" class="">Helix Editor 언어 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/mqtt-%EA%B7%BC%EB%8D%B0-%EB%B3%B4%ED%86%B5-%EB%9D%BC%EC%A6%88%EB%B2%A0%EB%A6%AC%ED%8C%8C%EC%9D%B4%EC%99%80-%ED%86%B5%EC%8B%A0%ED%95%98%EB%8A%94-api-%EC%84%9C%EB%B2%84%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EB%A7%8C%EB%93%A4%EC%96%B4/" class="">Mqtt 근데 보통 라즈베리파이와 통신하는 API 서버는 어떻게 만들어?</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/neovim-plugin---colorscheme.lua/" class="">Neo Vim Plugin Colorscheme.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/neovim-plugin---oil.lua/" class="">Neo Vim Plugin Oil.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/neovim-plugin---telescope.lua/" class="">Neo Vim Plugin Telescope.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nextjs---failed-websocket-is-closed-due-to-suspension./" class="">Nextjs Failed Web Socket Is Closed Due to Suspension.</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nextjs-%EA%B5%AC%EC%A1%B0/" class="">Nextjs 구조</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nginx---ssl-%EC%9D%B8%EC%A6%9D-%EB%B0%9B%EA%B8%B0/" class="">Nginx Ssl 인증 받기</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/prisma-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">Prisma 사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/qwen-2.5-coder/" class="">Qwen 2.5 Coder</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/react-flux-%ED%8C%A8%ED%84%B4-%EA%B0%84%EB%8B%A8-%EC%98%88%EC%A0%9C/" class="">React Flux 패턴 간단 예제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ubuntu-%EC%84%A4%EC%A0%95/" class="">Ubuntu 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ubuntu-%EC%A0%80%EC%9E%A5-%EA%B3%B5%EA%B0%84-%ED%99%95%EC%9D%B8/" class="">Ubuntu 저장 공간 확인</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/ubuntu-%ED%95%9C%EA%B8%80-%EA%B9%A8%EC%A7%90-%EB%AC%B8%EC%A0%9C/" class="">Ubuntu 한글 깨짐 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/uiux-%EC%83%89%EC%83%81/" class="">Uiux 색상</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/windows-%EC%84%A4%EC%B9%98-%EC%A4%91-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC-%EC%97%B0%EA%B2%B0-%EB%AC%B8%EC%A0%9C/" class="">Windows 설치 중 네트워크 연결 문제</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/xmake-%EC%82%AC%EC%9A%A9%EB%B2%95/" class="">Xmake 사용법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/zed-editor-windows%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Zed Editor Windows에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/zshrc-%EC%84%A4%EC%A0%95/" class="">Zshrc 설정</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EC%9D%B4%EB%AF%B8%EC%A7%80-%EB%84%A3%EB%8A%94%EB%B2%95/" class="">마크다운 이미지 넣는법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EB%B0%9C%EB%8F%84%EB%A5%B4%ED%94%84-%EA%B5%90%EC%9C%A1/" class="">발도르프 교육</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98/" class="">알고리즘</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-blog/" class="">프로젝트 Blog</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-kosta-2/" class="">프로젝트 Kosta 2</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-mtc/" class="">프로젝트 Mtc</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/alacritty---alacritty.toml/" class="">alacritty.toml</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/cmakelists.txt/" class="">CMakeLists.txt</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/neovim-config---keymaps.lua/" class="">keymaps.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/nginx---letsencrypt-%EC%9E%90%EB%8F%99%EA%B0%B1%EC%8B%A0/" class="">Letsencrypt 자동갱신</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/oracle-%EC%97%B0%EA%B2%B0/" class="">Oracle 연결</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/docker-ubuntu%EC%97%90-%EC%84%A4%EC%B9%98/" class="">Ubuntu에 설치</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/xmake.lua/" class="">xmake.lua</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/latex-%EB%A7%88%ED%81%AC%EB%8B%A4%EC%9A%B4-%EB%AC%B8%EB%B2%95/" class="">기호 모음</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/sql-lite-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95/" class="">사용 방법</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/%EC%9E%90%EA%B2%A9%EC%A6%9D-%EB%AA%A9%EB%A1%9D/" class="">자격증 목록</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="/posts/"  >
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>(Hu)go Template Primer</h3>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#introduction-to-go-templates">Introduction to Go Templates</a></li>
+    <li><a href="#basic-syntax">Basic Syntax</a></li>
+    <li><a href="#variables">Variables</a></li>
+    <li><a href="#functions">Functions</a></li>
+    <li><a href="#includes">Includes</a></li>
+    <li><a href="#logic">Logic</a>
+      <ul>
+        <li><a href="#iteration">Iteration</a></li>
+        <li><a href="#conditionals">Conditionals</a></li>
+      </ul>
+    </li>
+    <li><a href="#pipes">Pipes</a></li>
+    <li><a href="#context-aka-the-dot">Context (aka. the dot)</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#using-content-page-parameters">Using Content (page) Parameters</a></li>
+    <li><a href="#using-site-config-parameters">Using Site (config) Parameters</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+<article class="markdown book-post">
+  <h1>
+    (Hu)go Template Primer
+  </h1>
+  
+  <div class="flex align-center text-small book-post-date">
+    <img src="/svg/calendar.svg" class="book-icon " alt="" />
+    <span>April 2, 2014</span>
+  </div>
+
+
+
+  
+  <div class="text-small">
+    
+      <a href="/categories/development/">Development</a>, 
+      <a href="/categories/golang/">Golang</a>
+  </div>
+  
+
+  
+  <div class="text-small">
+    
+      <a href="/tags/go/">Go</a>, 
+      <a href="/tags/golang/">Golang</a>, 
+      <a href="/tags/templates/">Templates</a>, 
+      <a href="/tags/themes/">Themes</a>, 
+      <a href="/tags/development/">Development</a>
+  </div>
+  
+
+
+  <div class="book-post-content"><p>Hugo uses the excellent <a href="https://golang.org/">Go</a> <a href="https://golang.org/pkg/html/template/">html/template</a> library for
 its template engine. It is an extremely lightweight engine that provides a very
 small amount of logic. In our experience that it is just the right amount of
 logic to be able to create a good static website. If you have used other
 template systems from different languages or frameworks you will find a lot of
-similarities in Go templates.</p><p>This document is a brief primer on using Go templates. The <a href=https://golang.org/pkg/html/template/>Go docs</a>
-provide more details.</p><h2 id=introduction-to-go-templates>Introduction to Go Templates
-<a class=anchor href=#introduction-to-go-templates>#</a></h2><p>Go templates provide an extremely simple template language. It adheres to the
+similarities in Go templates.</p>
+<p>This document is a brief primer on using Go templates. The <a href="https://golang.org/pkg/html/template/">Go docs</a>
+provide more details.</p>
+<h2 id="introduction-to-go-templates">
+  Introduction to Go Templates
+  <a class="anchor" href="#introduction-to-go-templates">#</a>
+</h2>
+<p>Go templates provide an extremely simple template language. It adheres to the
 belief that only the most basic of logic belongs in the template or view layer.
-One consequence of this simplicity is that Go templates parse very quickly.</p><p>A unique characteristic of Go templates is they are content aware. Variables and
+One consequence of this simplicity is that Go templates parse very quickly.</p>
+<p>A unique characteristic of Go templates is they are content aware. Variables and
 content will be sanitized depending on the context of where they are used. More
-details can be found in the <a href=https://golang.org/pkg/html/template/>Go docs</a>.</p><h2 id=basic-syntax>Basic Syntax
-<a class=anchor href=#basic-syntax>#</a></h2><p>Golang templates are HTML files with the addition of variables and
-functions.</p><p><strong>Go variables and functions are accessible within {{ }}</strong></p><p>Accessing a predefined variable &ldquo;foo&rdquo;:</p><pre><code>{{ foo }}
-</code></pre><p><strong>Parameters are separated using spaces</strong></p><p>Calling the add function with input of 1, 2:</p><pre><code>{{ add 1 2 }}
-</code></pre><p><strong>Methods and fields are accessed via dot notation</strong></p><p>Accessing the Page Parameter &ldquo;bar&rdquo;</p><pre><code>{{ .Params.bar }}
-</code></pre><p><strong>Parentheses can be used to group items together</strong></p><pre><code>{{ if or (isset .Params &quot;alt&quot;) (isset .Params &quot;caption&quot;) }} Caption {{ end }}
-</code></pre><h2 id=variables>Variables
-<a class=anchor href=#variables>#</a></h2><p>Each Go template has a struct (object) made available to it. In hugo each
+details can be found in the <a href="https://golang.org/pkg/html/template/">Go docs</a>.</p>
+<h2 id="basic-syntax">
+  Basic Syntax
+  <a class="anchor" href="#basic-syntax">#</a>
+</h2>
+<p>Golang templates are HTML files with the addition of variables and
+functions.</p>
+<p><strong>Go variables and functions are accessible within {{ }}</strong></p>
+<p>Accessing a predefined variable &ldquo;foo&rdquo;:</p>
+<pre><code>{{ foo }}
+</code></pre>
+<p><strong>Parameters are separated using spaces</strong></p>
+<p>Calling the add function with input of 1, 2:</p>
+<pre><code>{{ add 1 2 }}
+</code></pre>
+<p><strong>Methods and fields are accessed via dot notation</strong></p>
+<p>Accessing the Page Parameter &ldquo;bar&rdquo;</p>
+<pre><code>{{ .Params.bar }}
+</code></pre>
+<p><strong>Parentheses can be used to group items together</strong></p>
+<pre><code>{{ if or (isset .Params &quot;alt&quot;) (isset .Params &quot;caption&quot;) }} Caption {{ end }}
+</code></pre>
+<h2 id="variables">
+  Variables
+  <a class="anchor" href="#variables">#</a>
+</h2>
+<p>Each Go template has a struct (object) made available to it. In hugo each
 template is passed either a page or a node struct depending on which type of
 page you are rendering. More details are available on the
-<a href=/layout/variables>variables</a> page.</p><p>A variable is accessed by referencing the variable name.</p><pre><code>&lt;title&gt;{{ .Title }}&lt;/title&gt;
-</code></pre><p>Variables can also be defined and referenced.</p><pre><code>{{ $address := &quot;123 Main St.&quot;}}
+<a href="/layout/variables">variables</a> page.</p>
+<p>A variable is accessed by referencing the variable name.</p>
+<pre><code>&lt;title&gt;{{ .Title }}&lt;/title&gt;
+</code></pre>
+<p>Variables can also be defined and referenced.</p>
+<pre><code>{{ $address := &quot;123 Main St.&quot;}}
 {{ $address }}
-</code></pre><h2 id=functions>Functions
-<a class=anchor href=#functions>#</a></h2><p>Go template ship with a few functions which provide basic functionality. The Go
+</code></pre>
+<h2 id="functions">
+  Functions
+  <a class="anchor" href="#functions">#</a>
+</h2>
+<p>Go template ship with a few functions which provide basic functionality. The Go
 template system also provides a mechanism for applications to extend the
-available functions with their own. <a href=/layout/functions>Hugo template
+available functions with their own. <a href="/layout/functions">Hugo template
 functions</a> provide some additional functionality we believe
 are useful for building websites. Functions are called by using their name
 followed by the required parameters separated by spaces. Template
-functions cannot be added without recompiling hugo.</p><p><strong>Example:</strong></p><pre><code>{{ add 1 2 }}
-</code></pre><h2 id=includes>Includes
-<a class=anchor href=#includes>#</a></h2><p>When including another template you will pass to it the data it will be
+functions cannot be added without recompiling hugo.</p>
+<p><strong>Example:</strong></p>
+<pre><code>{{ add 1 2 }}
+</code></pre>
+<h2 id="includes">
+  Includes
+  <a class="anchor" href="#includes">#</a>
+</h2>
+<p>When including another template you will pass to it the data it will be
 able to access. To pass along the current context please remember to
 include a trailing dot. The templates location will always be starting at
-the /layout/ directory within Hugo.</p><p><strong>Example:</strong></p><pre><code>{{ template &quot;chrome/header.html&quot; . }}
-</code></pre><h2 id=logic>Logic
-<a class=anchor href=#logic>#</a></h2><p>Go templates provide the most basic iteration and conditional logic.</p><h3 id=iteration>Iteration
-<a class=anchor href=#iteration>#</a></h3><p>Just like in Go, the Go templates make heavy use of range to iterate over
+the /layout/ directory within Hugo.</p>
+<p><strong>Example:</strong></p>
+<pre><code>{{ template &quot;chrome/header.html&quot; . }}
+</code></pre>
+<h2 id="logic">
+  Logic
+  <a class="anchor" href="#logic">#</a>
+</h2>
+<p>Go templates provide the most basic iteration and conditional logic.</p>
+<h3 id="iteration">
+  Iteration
+  <a class="anchor" href="#iteration">#</a>
+</h3>
+<p>Just like in Go, the Go templates make heavy use of range to iterate over
 a map, array or slice. The following are different examples of how to use
-range.</p><p><strong>Example 1: Using Context</strong></p><pre><code>{{ range array }}
+range.</p>
+<p><strong>Example 1: Using Context</strong></p>
+<pre><code>{{ range array }}
     {{ . }}
 {{ end }}
-</code></pre><p><strong>Example 2: Declaring value variable name</strong></p><pre><code>{{range $element := array}}
+</code></pre>
+<p><strong>Example 2: Declaring value variable name</strong></p>
+<pre><code>{{range $element := array}}
     {{ $element }}
 {{ end }}
-</code></pre><p><strong>Example 2: Declaring key and value variable name</strong></p><pre><code>{{range $index, $element := array}}
+</code></pre>
+<p><strong>Example 2: Declaring key and value variable name</strong></p>
+<pre><code>{{range $index, $element := array}}
     {{ $index }}
     {{ $element }}
 {{ end }}
-</code></pre><h3 id=conditionals>Conditionals
-<a class=anchor href=#conditionals>#</a></h3><p>If, else, with, or, & and provide the framework for handling conditional
-logic in Go Templates. Like range, each statement is closed with <code>end</code>.</p><p>Go Templates treat the following values as false:</p><ul><li>false</li><li>0</li><li>any array, slice, map, or string of length zero</li></ul><p><strong>Example 1: If</strong></p><pre><code>{{ if isset .Params &quot;title&quot; }}&lt;h4&gt;{{ index .Params &quot;title&quot; }}&lt;/h4&gt;{{ end }}
-</code></pre><p><strong>Example 2: If -> Else</strong></p><pre><code>{{ if isset .Params &quot;alt&quot; }}
+</code></pre>
+<h3 id="conditionals">
+  Conditionals
+  <a class="anchor" href="#conditionals">#</a>
+</h3>
+<p>If, else, with, or, &amp; and provide the framework for handling conditional
+logic in Go Templates. Like range, each statement is closed with <code>end</code>.</p>
+<p>Go Templates treat the following values as false:</p>
+<ul>
+<li>false</li>
+<li>0</li>
+<li>any array, slice, map, or string of length zero</li>
+</ul>
+<p><strong>Example 1: If</strong></p>
+<pre><code>{{ if isset .Params &quot;title&quot; }}&lt;h4&gt;{{ index .Params &quot;title&quot; }}&lt;/h4&gt;{{ end }}
+</code></pre>
+<p><strong>Example 2: If -&gt; Else</strong></p>
+<pre><code>{{ if isset .Params &quot;alt&quot; }}
     {{ index .Params &quot;alt&quot; }}
 {{else}}
     {{ index .Params &quot;caption&quot; }}
 {{ end }}
-</code></pre><p><strong>Example 3: And & Or</strong></p><pre><code>{{ if and (or (isset .Params &quot;title&quot;) (isset .Params &quot;caption&quot;)) (isset .Params &quot;attr&quot;)}}
-</code></pre><p><strong>Example 4: With</strong></p><p>An alternative way of writing &ldquo;if&rdquo; and then referencing the same value
+</code></pre>
+<p><strong>Example 3: And &amp; Or</strong></p>
+<pre><code>{{ if and (or (isset .Params &quot;title&quot;) (isset .Params &quot;caption&quot;)) (isset .Params &quot;attr&quot;)}}
+</code></pre>
+<p><strong>Example 4: With</strong></p>
+<p>An alternative way of writing &ldquo;if&rdquo; and then referencing the same value
 is to use &ldquo;with&rdquo; instead. With rebinds the context <code>.</code> within its scope,
-and skips the block if the variable is absent.</p><p>The first example above could be simplified as:</p><pre><code>{{ with .Params.title }}&lt;h4&gt;{{ . }}&lt;/h4&gt;{{ end }}
-</code></pre><p><strong>Example 5: If -> Else If</strong></p><pre><code>{{ if isset .Params &quot;alt&quot; }}
+and skips the block if the variable is absent.</p>
+<p>The first example above could be simplified as:</p>
+<pre><code>{{ with .Params.title }}&lt;h4&gt;{{ . }}&lt;/h4&gt;{{ end }}
+</code></pre>
+<p><strong>Example 5: If -&gt; Else If</strong></p>
+<pre><code>{{ if isset .Params &quot;alt&quot; }}
     {{ index .Params &quot;alt&quot; }}
 {{ else if isset .Params &quot;caption&quot; }}
     {{ index .Params &quot;caption&quot; }}
 {{ end }}
-</code></pre><h2 id=pipes>Pipes
-<a class=anchor href=#pipes>#</a></h2><p>One of the most powerful components of Go templates is the ability to
+</code></pre>
+<h2 id="pipes">
+  Pipes
+  <a class="anchor" href="#pipes">#</a>
+</h2>
+<p>One of the most powerful components of Go templates is the ability to
 stack actions one after another. This is done by using pipes. Borrowed
 from unix pipes, the concept is simple, each pipeline&rsquo;s output becomes the
-input of the following pipe.</p><p>Because of the very simple syntax of Go templates, the pipe is essential
+input of the following pipe.</p>
+<p>Because of the very simple syntax of Go templates, the pipe is essential
 to being able to chain together function calls. One limitation of the
 pipes is that they only can work with a single value and that value
-becomes the last parameter of the next pipeline.</p><p>A few simple examples should help convey how to use the pipe.</p><p><strong>Example 1 :</strong></p><pre><code>{{ if eq 1 1 }} Same {{ end }}
-</code></pre><p>is the same as</p><pre><code>{{ eq 1 1 | if }} Same {{ end }}
-</code></pre><p>It does look odd to place the if at the end, but it does provide a good
-illustration of how to use the pipes.</p><p><strong>Example 2 :</strong></p><pre><code>{{ index .Params &quot;disqus_url&quot; | html }}
-</code></pre><p>Access the page parameter called &ldquo;disqus_url&rdquo; and escape the HTML.</p><p><strong>Example 3 :</strong></p><pre><code>{{ if or (or (isset .Params &quot;title&quot;) (isset .Params &quot;caption&quot;)) (isset .Params &quot;attr&quot;)}}
+becomes the last parameter of the next pipeline.</p>
+<p>A few simple examples should help convey how to use the pipe.</p>
+<p><strong>Example 1 :</strong></p>
+<pre><code>{{ if eq 1 1 }} Same {{ end }}
+</code></pre>
+<p>is the same as</p>
+<pre><code>{{ eq 1 1 | if }} Same {{ end }}
+</code></pre>
+<p>It does look odd to place the if at the end, but it does provide a good
+illustration of how to use the pipes.</p>
+<p><strong>Example 2 :</strong></p>
+<pre><code>{{ index .Params &quot;disqus_url&quot; | html }}
+</code></pre>
+<p>Access the page parameter called &ldquo;disqus_url&rdquo; and escape the HTML.</p>
+<p><strong>Example 3 :</strong></p>
+<pre><code>{{ if or (or (isset .Params &quot;title&quot;) (isset .Params &quot;caption&quot;)) (isset .Params &quot;attr&quot;)}}
 Stuff Here
 {{ end }}
-</code></pre><p>Could be rewritten as</p><pre><code>{{  isset .Params &quot;caption&quot; | or isset .Params &quot;title&quot; | or isset .Params &quot;attr&quot; | if }}
+</code></pre>
+<p>Could be rewritten as</p>
+<pre><code>{{  isset .Params &quot;caption&quot; | or isset .Params &quot;title&quot; | or isset .Params &quot;attr&quot; | if }}
 Stuff Here
 {{ end }}
-</code></pre><h2 id=context-aka-the-dot>Context (aka. the dot)
-<a class=anchor href=#context-aka-the-dot>#</a></h2><p>The most easily overlooked concept to understand about Go templates is that {{ . }}
+</code></pre>
+<h2 id="context-aka-the-dot">
+  Context (aka. the dot)
+  <a class="anchor" href="#context-aka-the-dot">#</a>
+</h2>
+<p>The most easily overlooked concept to understand about Go templates is that {{ . }}
 always refers to the current context. In the top level of your template this
 will be the data set made available to it. Inside of a iteration it will have
 the value of the current item. When inside of a loop the context has changed. .
 will no longer refer to the data available to the entire page. If you need to
 access this from within the loop you will likely want to set it to a variable
-instead of depending on the context.</p><p><strong>Example:</strong></p><pre><code>  {{ $title := .Site.Title }}
+instead of depending on the context.</p>
+<p><strong>Example:</strong></p>
+<pre><code>  {{ $title := .Site.Title }}
   {{ range .Params.tags }}
     &lt;li&gt; &lt;a href=&quot;{{ $baseurl }}/tags/{{ . | urlize }}&quot;&gt;{{ . }}&lt;/a&gt; - {{ $title }} &lt;/li&gt;
   {{ end }}
-</code></pre><p>Notice how once we have entered the loop the value of {{ . }} has changed. We
+</code></pre>
+<p>Notice how once we have entered the loop the value of {{ . }} has changed. We
 have defined a variable outside of the loop so we have access to it from within
-the loop.</p><h1 id=hugo-parameters>Hugo Parameters
-<a class=anchor href=#hugo-parameters>#</a></h1><p>Hugo provides the option of passing values to the template language
+the loop.</p>
+<h1 id="hugo-parameters">
+  Hugo Parameters
+  <a class="anchor" href="#hugo-parameters">#</a>
+</h1>
+<p>Hugo provides the option of passing values to the template language
 through the site configuration (for sitewide values), or through the meta
 data of each specific piece of content. You can define any values of any
 type (supported by your front matter/config format) and use them however
-you want to inside of your templates.</p><h2 id=using-content-page-parameters>Using Content (page) Parameters
-<a class=anchor href=#using-content-page-parameters>#</a></h2><p>In each piece of content you can provide variables to be used by the
-templates. This happens in the <a href=/content/front-matter>front matter</a>.</p><p>An example of this is used in this documentation site. Most of the pages
+you want to inside of your templates.</p>
+<h2 id="using-content-page-parameters">
+  Using Content (page) Parameters
+  <a class="anchor" href="#using-content-page-parameters">#</a>
+</h2>
+<p>In each piece of content you can provide variables to be used by the
+templates. This happens in the <a href="/content/front-matter">front matter</a>.</p>
+<p>An example of this is used in this documentation site. Most of the pages
 benefit from having the table of contents provided. Sometimes the TOC just
 doesn&rsquo;t make a lot of sense. We&rsquo;ve defined a variable in our front matter
-of some pages to turn off the TOC from being displayed.</p><p>Here is the example front matter:</p><pre tabindex=0><code>---
+of some pages to turn off the TOC from being displayed.</p>
+<p>Here is the example front matter:</p>
+<pre tabindex="0"><code>---
 title: &#34;Permalinks&#34;
 date: &#34;2013-11-18&#34;
 aliases:
@@ -130,36 +1162,130 @@ groups: [&#34;extras&#34;]
 groups_weight: 30
 notoc: true
 ---
-</code></pre><p>Here is the corresponding code inside of the template:</p><pre><code>  {{ if not .Params.notoc }}
+</code></pre><p>Here is the corresponding code inside of the template:</p>
+<pre><code>  {{ if not .Params.notoc }}
     &lt;div id=&quot;toc&quot; class=&quot;well col-md-4 col-sm-6&quot;&gt;
     {{ .TableOfContents }}
     &lt;/div&gt;
   {{ end }}
-</code></pre><h2 id=using-site-config-parameters>Using Site (config) Parameters
-<a class=anchor href=#using-site-config-parameters>#</a></h2><p>In your top-level configuration file (eg, <code>config.yaml</code>) you can define site
-parameters, which are values which will be available to you in chrome.</p><p>For instance, you might declare:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>params</span>:
-</span></span><span style=display:flex><span>  <span style=color:#f92672>CopyrightHTML</span>: <span style=color:#e6db74>&#34;Copyright &amp;#xA9; 2013 John Doe. All Rights Reserved.&#34;</span>
-</span></span><span style=display:flex><span>  <span style=color:#f92672>TwitterUser</span>: <span style=color:#e6db74>&#34;spf13&#34;</span>
-</span></span><span style=display:flex><span>  <span style=color:#f92672>SidebarRecentLimit</span>: <span style=color:#ae81ff>5</span>
-</span></span></code></pre></div><p>Within a footer layout, you might then declare a <code>&lt;footer></code> which is only
+</code></pre>
+<h2 id="using-site-config-parameters">
+  Using Site (config) Parameters
+  <a class="anchor" href="#using-site-config-parameters">#</a>
+</h2>
+<p>In your top-level configuration file (eg, <code>config.yaml</code>) you can define site
+parameters, which are values which will be available to you in chrome.</p>
+<p>For instance, you might declare:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">params</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">CopyrightHTML</span>: <span style="color:#e6db74">&#34;Copyright &amp;#xA9; 2013 John Doe. All Rights Reserved.&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">TwitterUser</span>: <span style="color:#e6db74">&#34;spf13&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">SidebarRecentLimit</span>: <span style="color:#ae81ff">5</span>
+</span></span></code></pre></div><p>Within a footer layout, you might then declare a <code>&lt;footer&gt;</code> which is only
 provided if the <code>CopyrightHTML</code> parameter is provided, and if it is given,
 you would declare it to be HTML-safe, so that the HTML entity is not escaped
-again. This would let you easily update just your top-level config file each
-January 1st, instead of hunting through your templates.</p><pre tabindex=0><code>{{if .Site.Params.CopyrightHTML}}&lt;footer&gt;
+again.  This would let you easily update just your top-level config file each
+January 1st, instead of hunting through your templates.</p>
+<pre tabindex="0"><code>{{if .Site.Params.CopyrightHTML}}&lt;footer&gt;
 &lt;div class=&#34;text-center&#34;&gt;{{.Site.Params.CopyrightHTML | safeHtml}}&lt;/div&gt;
 &lt;/footer&gt;{{end}}
 </code></pre><p>An alternative way of writing the &ldquo;if&rdquo; and then referencing the same value
 is to use &ldquo;with&rdquo; instead. With rebinds the context <code>.</code> within its scope,
-and skips the block if the variable is absent:</p><pre tabindex=0><code>{{with .Site.Params.TwitterUser}}&lt;span class=&#34;twitter&#34;&gt;
+and skips the block if the variable is absent:</p>
+<pre tabindex="0"><code>{{with .Site.Params.TwitterUser}}&lt;span class=&#34;twitter&#34;&gt;
 &lt;a href=&#34;https://twitter.com/{{.}}&#34; rel=&#34;author&#34;&gt;
 &lt;img src=&#34;/images/twitter.png&#34; width=&#34;48&#34; height=&#34;48&#34; title=&#34;Twitter: {{.}}&#34;
  alt=&#34;Twitter&#34;&gt;&lt;/a&gt;
 &lt;/span&gt;{{end}}
 </code></pre><p>Finally, if you want to pull &ldquo;magic constants&rdquo; out of your layouts, you can do
-so, such as in this example:</p><pre tabindex=0><code>&lt;nav class=&#34;recent&#34;&gt;
+so, such as in this example:</p>
+<pre tabindex="0"><code>&lt;nav class=&#34;recent&#34;&gt;
   &lt;h1&gt;Recent Posts&lt;/h1&gt;
   &lt;ul&gt;{{range first .Site.Params.SidebarRecentLimit .Site.Recent}}
     &lt;li&gt;&lt;a href=&#34;{{.RelPermalink}}&#34;&gt;{{.Title}}&lt;/a&gt;&lt;/li&gt;
   {{end}}&lt;/ul&gt;
 &lt;/nav&gt;
-</code></pre></div></article><footer class=book-footer><div class="flex flex-wrap justify-between"></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#introduction-to-go-templates>Introduction to Go Templates</a></li><li><a href=#basic-syntax>Basic Syntax</a></li><li><a href=#variables>Variables</a></li><li><a href=#functions>Functions</a></li><li><a href=#includes>Includes</a></li><li><a href=#logic>Logic</a><ul><li><a href=#iteration>Iteration</a></li><li><a href=#conditionals>Conditionals</a></li></ul></li><li><a href=#pipes>Pipes</a></li><li><a href=#context-aka-the-dot>Context (aka. the dot)</a></li></ul><ul><li><a href=#using-content-page-parameters>Using Content (page) Parameters</a></li><li><a href=#using-site-config-parameters>Using Site (config) Parameters</a></li></ul></nav></div></aside></main></body></html>
+</code></pre></div>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#introduction-to-go-templates">Introduction to Go Templates</a></li>
+    <li><a href="#basic-syntax">Basic Syntax</a></li>
+    <li><a href="#variables">Variables</a></li>
+    <li><a href="#functions">Functions</a></li>
+    <li><a href="#includes">Includes</a></li>
+    <li><a href="#logic">Logic</a>
+      <ul>
+        <li><a href="#iteration">Iteration</a></li>
+        <li><a href="#conditionals">Conditionals</a></li>
+      </ul>
+    </li>
+    <li><a href="#pipes">Pipes</a></li>
+    <li><a href="#context-aka-the-dot">Context (aka. the dot)</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#using-content-page-parameters">Using Content (page) Parameters</a></li>
+    <li><a href="#using-site-config-parameters">Using Site (config) Parameters</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
